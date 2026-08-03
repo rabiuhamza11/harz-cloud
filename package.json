@@ -1,0 +1,25 @@
+{
+  "name": "harz-cloud",
+  "version": "1.0.0",
+  "description": "HARZ Cloud Backend — Independent Infrastructure for HARZ Digital Services",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "backup": "node backup.js",
+    "test": "node test.js"
+  },
+  "keywords": ["harz", "cloud", "backend", "api", "paystack"],
+  "author": "Rabiu Hamza Mohammed",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "sqlite3": "^5.1.6",
+    "jsonwebtoken": "^9.0.2",
+    "bcryptjs": "^2.4.3"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

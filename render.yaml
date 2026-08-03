@@ -1,0 +1,33 @@
+# HARZ Cloud — Render Deployment Config
+# Deploy at: https://render.com → New → Web Service → Connect GitHub repo
+# Settings below auto-applied from render.yaml
+
+services:
+  - type: web
+    name: harz-cloud-backend
+    env: node
+    region: frankfurt  # Closest to Nigeria
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: HARZ_API_KEY
+        value: harz_cloud_live_321424
+      - key: PAYSTACK_SECRET_KEY
+        sync: false  # Set manually after deploy
+      - key: PORT
+        value: 3000
+
+  - type: cron
+    name: harz-daily-backup
+    env: node
+    schedule: "0 1 * * *"  # 1 AM UTC = 2 AM WAT
+    buildCommand: npm install
+    startCommand: node backup.js
+    plan: free
