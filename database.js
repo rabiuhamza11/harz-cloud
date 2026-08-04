@@ -1,214 +1,205 @@
 /**
- * HARZ Cloud Database Layer
- * Supports: SQLite (development) → PostgreSQL/Supabase (production)
+ * HARZ Cloud Database Layer v2.0
+ * Pure JSON file-based storage — no native dependencies needed
+ * Works perfectly on Render free tier
  */
 
-const sqlite3 = require('sqlite3').verbose();
+const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
 class Database {
   constructor() {
-    this.dbPath = path.join(__dirname, 'data', 'harz_cloud.db');
-    this.db = null;
+    this.dbPath = process.env.DB_PATH || path.join(__dirname, 'data', 'harz-cloud.json');
+    this.data = {};
+    this.initialized = false;
   }
 
   async init() {
-    return new Promise((resolve, reject) => {
-      const fs = require('fs');
-      const dir = path.dirname(this.dbPath);
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
+    if (this.initialized) return;
+    
+    const dir = path.dirname(this.dbPath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    
+    // Load existing data or create fresh
+    try {
+      if (fs.existsSync(this.dbPath)) {
+        const raw = fs.readFileSync(this.dbPath, 'utf8');
+        this.data = JSON.parse(raw);
+      } else {
+        this.data = { _meta: { created: new Date().toISOString() } };
+        this._save();
       }
-      
-      this.db = new sqlite3.Database(this.dbPath, (err) => {
-        if (err) return reject(err);
-        console.log('SQLite database connected:', this.dbPath);
-        
-        // Create meta table for tracking
-        this.db.run(`CREATE TABLE IF NOT EXISTS _meta (
-          key TEXT PRIMARY KEY,
-          value TEXT,
-          updated_at TEXT
-        )`);
-        
-        resolve();
-      });
-    });
+    } catch (e) {
+      this.data = { _meta: { created: new Date().toISOString(), error: e.message } };
+      this._save();
+    }
+    
+    this.initialized = true;
+    console.log('HARZ Cloud database initialized:', this.dbPath);
   }
 
-  // Ensure table exists
-  ensureTable(name) {
-    return new Promise((resolve, reject) => {
-      this.db.run(
-        `CREATE TABLE IF NOT EXISTS ${name} (
-          id TEXT PRIMARY KEY,
-          data TEXT NOT NULL,
-          created_date TEXT,
-          updated_date TEXT,
-          created_by TEXT
-        )`,
-        (err) => {
-          if (err) reject(err);
-          else resolve();
-        }
-      );
-    });
+  _save() {
+    try {
+      fs.writeFileSync(this.dbPath, JSON.stringify(this.data, null, 2));
+    } catch (e) {
+      console.error('Database save error:', e.message);
+    }
   }
 
-  // Insert
-  async insert(table, data) {
-    await this.ensureTable(table);
-    return new Promise((resolve, reject) => {
-      const id = data.id || crypto.randomUUID();
-      const now = new Date().toISOString();
-      const record = {
-        ...data,
-        id,
-        created_date: data.created_date || now,
-        updated_date: data.updated_date || now
-      };
-      
-      this.db.run(
-        `INSERT INTO ${table} (id, data, created_date, updated_date, created_by) VALUES (?, ?, ?, ?, ?)`,
-        [id, JSON.stringify(record), record.created_date, record.updated_date, record.created_by || 'system'],
-        (err) => {
-          if (err) reject(err);
-          else resolve(record);
-        }
-      );
-    });
+  _ensureTable(name) {
+    if (!this.data[name]) {
+      this.data[name] = [];
+    }
   }
 
-  // Find with query
+  async insert(table, recordData) {
+    await this.init();
+    this._ensureTable(table);
+    
+    const id = recordData.id || crypto.randomUUID();
+    const now = new Date().toISOString();
+    const record = {
+      ...recordData,
+      id,
+      created_date: recordData.created_date || now,
+      updated_date: recordData.updated_date || now,
+      created_by: recordData.created_by || 'system'
+    };
+    
+    this.data[table].push(record);
+    this._save();
+    return record;
+  }
+
   async find(table, query = {}, options = {}) {
-    await this.ensureTable(table);
-    return new Promise((resolve, reject) => {
-      let sql = `SELECT data FROM ${table}`;
-      const params = [];
-      const conditions = [];
-      
-      // Build WHERE from query
-      for (const [key, value] of Object.entries(query)) {
-        if (key === 'id') {
-          conditions.push(`id = ?`);
-          params.push(value);
-        } else {
-          conditions.push(`json_extract(data, '$.${key}') = ?`);
-          params.push(String(value));
-        }
+    await this.init();
+    this._ensureTable(table);
+    
+    let records = [...this.data[table]];
+    
+    // Apply query filters
+    for (const [key, value] of Object.entries(query)) {
+      if (key === 'id') {
+        records = records.filter(r => r.id === value);
+      } else if (Array.isArray(value)) {
+        records = records.filter(r => value.includes(r[key]));
+      } else {
+        records = records.filter(r => r[key] === value);
       }
-      
-      if (conditions.length > 0) {
-        sql += ' WHERE ' + conditions.join(' AND ');
-      }
-      
-      // Sort
-      if (options.sort) {
-        const dir = options.sort.startsWith('-') ? 'DESC' : 'ASC';
-        const field = options.sort.replace('-', '');
-        if (field === 'created_date' || field === 'updated_date') {
-          sql += ` ORDER BY ${field} ${dir}`;
-        } else {
-          sql += ` ORDER BY json_extract(data, '$.${field}') ${dir}`;
-        }
-      }
-      
-      // Limit & Skip
-      if (options.limit) sql += ` LIMIT ${parseInt(options.limit)}`;
-      if (options.skip) sql += ` OFFSET ${parseInt(options.skip)}`;
-      
-      this.db.all(sql, params, (err, rows) => {
-        if (err) return reject(err);
-        resolve(rows.map(r => JSON.parse(r.data)));
+    }
+    
+    // Sort
+    if (options.sort) {
+      const dir = options.sort.startsWith('-') ? -1 : 1;
+      const field = options.sort.replace('-', '');
+      records.sort((a, b) => {
+        const aVal = a[field] || '';
+        const bVal = b[field] || '';
+        if (aVal < bVal) return -1 * dir;
+        if (aVal > bVal) return 1 * dir;
+        return 0;
       });
-    });
+    }
+    
+    // Limit & Skip
+    if (options.skip) records = records.slice(parseInt(options.skip));
+    if (options.limit) records = records.slice(0, parseInt(options.limit));
+    
+    return records;
   }
 
-  // Find one
   async findOne(table, query) {
     const records = await this.find(table, query, { limit: 1 });
     return records[0] || null;
   }
 
-  // Update
-  async update(table, id, data) {
-    await this.ensureTable(table);
-    return new Promise((resolve, reject) => {
-      const now = new Date().toISOString();
-      
-      this.db.get(`SELECT data FROM ${table} WHERE id = ?`, [id], (err, row) => {
-        if (err) return reject(err);
-        if (!row) return resolve(null);
-        
-        const existing = JSON.parse(row.data);
-        const updated = { ...existing, ...data, id, updated_date: now };
-        
-        this.db.run(
-          `UPDATE ${table} SET data = ?, updated_date = ? WHERE id = ?`,
-          [JSON.stringify(updated), now, id],
-          (err) => {
-            if (err) reject(err);
-            else resolve(updated);
-          }
-        );
-      });
-    });
+  async update(table, id, updateData) {
+    await this.init();
+    this._ensureTable(table);
+    
+    const idx = this.data[table].findIndex(r => r.id === id);
+    if (idx === -1) return null;
+    
+    const now = new Date().toISOString();
+    this.data[table][idx] = {
+      ...this.data[table][idx],
+      ...updateData,
+      id,
+      updated_date: now
+    };
+    
+    this._save();
+    return this.data[table][idx];
   }
 
-  // Update by condition
-  async updateWhere(table, condition, data) {
-    const records = await this.find(table, condition);
-    for (const record of records) {
-      await this.update(table, record.id, data);
-    }
-    return records.length;
-  }
-
-  // Delete
-  async delete(table, id) {
-    await this.ensureTable(table);
-    return new Promise((resolve, reject) => {
-      this.db.run(`DELETE FROM ${table} WHERE id = ?`, [id], function(err) {
-        if (err) reject(err);
-        else resolve(this.changes > 0);
-      });
-    });
-  }
-
-  // Count
-  async count(table, query = {}) {
-    await this.ensureTable(table);
-    const records = await this.find(table, query, { limit: 100000 });
-    return records.length;
-  }
-
-  // List all tables
-  async listTables() {
-    return new Promise((resolve, reject) => {
-      this.db.all(
-        `SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE '_%' AND name NOT LIKE 'sqlite_%'`,
-        (err, rows) => {
-          if (err) reject(err);
-          else resolve(rows.map(r => r.name));
+  async updateWhere(table, condition, updateData) {
+    await this.init();
+    this._ensureTable(table);
+    
+    let count = 0;
+    const now = new Date().toISOString();
+    
+    for (let i = 0; i < this.data[table].length; i++) {
+      let match = true;
+      for (const [key, value] of Object.entries(condition)) {
+        if (this.data[table][i][key] !== value) {
+          match = false;
+          break;
         }
-      );
-    });
+      }
+      if (match) {
+        this.data[table][i] = {
+          ...this.data[table][i],
+          ...updateData,
+          updated_date: now
+        };
+        count++;
+      }
+    }
+    
+    if (count > 0) this._save();
+    return count;
   }
 
-  // Export table as JSON
+  async delete(table, id) {
+    await this.init();
+    this._ensureTable(table);
+    
+    const idx = this.data[table].findIndex(r => r.id === id);
+    if (idx === -1) return false;
+    
+    this.data[table].splice(idx, 1);
+    this._save();
+    return true;
+  }
+
+  async count(table, query = {}) {
+    const records = await this.find(table, query);
+    return records.length;
+  }
+
+  async listTables() {
+    await this.init();
+    return Object.keys(this.data).filter(k => k !== '_meta');
+  }
+
   async exportTable(table) {
-    await this.ensureTable(table);
-    return new Promise((resolve, reject) => {
-      this.db.all(`SELECT data FROM ${table}`, (err, rows) => {
-        if (err) reject(err);
-        else resolve(rows.map(r => JSON.parse(r.data)));
-      });
-    });
+    const records = await this.find(table);
+    return records;
+  }
+
+  async importTable(table, records) {
+    await this.init();
+    this.data[table] = records;
+    this._save();
+    return records.length;
   }
 }
 
 // Singleton
 const instance = new Database();
-instance.init().catch(console.error);
 
 module.exports = { Database: instance };
