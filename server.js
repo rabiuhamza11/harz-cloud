@@ -1,11 +1,13 @@
 /**
- * HARZ Cloud Backend v2.0 — Independent Infrastructure
+ * HARZ Cloud Backend v5.1 — Independent Infrastructure
  * With RBAC (Role-Based Access Control) + RLS (Row-Level Security)
  * 
  * Deploy: Render free tier
- * Database: SQLite (local) → Supabase PostgreSQL (production)
-const { Bridge } = require('./base44-bridge');
+ * Database: JSON file-based (no native deps needed)
+ * Base44 Bridge: 110+ entities synced bidirectionally
  */
+
+const { Bridge } = require('./base44-bridge');
 
 const express = require('express');
 const cors = require('cors');
@@ -2777,75 +2779,6 @@ app.post('/import/:entity', authenticate, async (req, res) => {
 });
 
 
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({
-    error: 'Not found',
-    path: req.path,
-    available: [
-      'GET /health',
-      'POST /auth/signup', 'POST /auth/login',
-      'GET /rbac/roles', 'GET /rbac/my-permissions', 'GET /rbac/permissions/:entity',
-      'PUT /rbac/user-role',
-      'GET/POST /api/:entity', 'GET/PUT/DELETE /api/:entity/:id',
-      'POST /paystack/initialize', 'GET /paystack/verify/:reference',
-      'POST /agent/chat',
-      'GET /backup/export',
-      'GET /audit/log',
-      'GET /approvals/pending', 'POST /approvals/:id/:decision',
-      'GET /sso/login', 'POST /sso/authenticate', 'POST /sso/verify',
-      'POST /sso/refresh', 'POST /sso/platform-token',
-      'GET /sso/platforms', 'GET /sso/login-url/:platformId',
-      'POST /sso/logout', 'POST /sso/logout-all', 'GET /sso/sessions',
-      'GET /push/vapid-key', 'POST /push/subscribe', 'POST /push/unsubscribe',
-      'POST /push/send', 'POST /push/broadcast', 'POST /push/platform',
-      'GET /push/templates', 'GET /push/my-devices', 'GET /push/history',
-      'POST /push/custom',
-      'GET /webhooks/providers', 'POST /webhooks/register', 'GET /webhooks/registered',
-      'PUT /webhooks/:id/toggle', 'POST /webhooks/:provider', 'GET /webhooks/:provider',
-      'GET /webhooks/history',
-      'GET /webhooks/all-providers',
-      'POST /webhooks/google', 'POST /webhooks/slack', 'POST /webhooks/notion',
-      'POST /webhooks/hubspot', 'POST /webhooks/discord',
-      'POST /webhooks/stripe', 'POST /webhooks/resellerclub',
-      'GET /agents/list', 'GET /agents/status/all', 'GET /agents/:id/status',
-      'POST /agents/delegate', 'POST /agents/auto-route', 'POST /agents/tasks/:id/execute',
-      'GET /agents/tasks', 'GET /agents/tasks/:id', 'POST /agents/pipeline',
-      'POST /agents/broadcast', 'GET /agents/messages', 'POST /agents/tasks/:id/cancel',
-      'POST /memory/store', 'GET /memory/retrieve', 'GET /memory/context',
-      'POST /memory/conversation', 'POST /memory/fact', 'POST /memory/preference',
-      'POST /memory/instruction', 'GET /memory/search', 'GET /memory/stats',
-      'POST /memory/share', 'DELETE /memory/:id', 'GET /memory/types', 'POST /memory/consolidate',
-      'POST /analytics/track', 'POST /analytics/pageview', 'POST /analytics/purchase',
-      'GET /analytics/summary', 'GET /analytics/active-users',
-      'POST /analytics/funnel', 'GET /analytics/user-journey/:email', 'GET /analytics/event-types',
-      'POST /session/start', 'POST /session/:id/event', 'POST /session/:id/end',
-      'GET /session/:id/replay', 'GET /session/heatmap', 'GET /session/list', 'GET /session/stats',
-      'POST /storage/upload', 'POST /storage/upload-batch',
-      'POST /storage/sign-url', 'GET /storage/info/:filename',
-      'DELETE /storage/:filename', 'GET /storage/list', 'GET /storage/stats',
-      'GET /storage/types', 'GET /cdn/:filename', 'GET /cdn/thumbnails/:filename',
-      'GET /cdn/private/:filename', 'GET /cdn/:filename/:size',
-      'GET /cdn/config', 'GET /cdn/delivery/:filename', 'GET /cdn/stats',
-      'GET /cdn/quota', 'POST /cdn/purge', 'POST /cdn/purge-all',
-      'GET /cdn/secure/:filename', 'GET /cdn/optimize/:filename/:width/:quality?',
-      'POST /cdn/prewarm', 'GET /cdn/report',
-      'GET /rate-limit/status',
-      'POST /email/send', 'GET /email/templates', 'GET /email/history',
-      'POST /sms/send', 'GET /sms/templates',
-      'GET /search',
-      'GET /scheduler/jobs', 'POST /scheduler/start', 'POST /scheduler/stop',
-      'POST /api-keys/generate', 'GET /api-keys/list', 'DELETE /api-keys/:id/revoke',
-      'POST /auth/password-reset/request', 'POST /auth/password-reset/verify',
-      'POST /auth/2fa/enable', 'POST /auth/2fa/verify', 'POST /auth/2fa/generate',
-      'GET /ws/status', 'POST /ws/broadcast',
-      'GET /export/:entity', 'GET /export-all', 'POST /import/:entity'
-    ]
-  });
-});
-
-app.listen(PORT, () => {
-
 // ============ BASE44 BRIDGE ROUTES ============
 
 // Bridge status
@@ -3033,21 +2966,90 @@ app.get('/bridge/all-data', async (req, res) => {
     
     for (const table of tablesToFetch) {
       const { data, source } = await Bridge.read(table, {}, { limit: 100 });
-      results[table] = { source, count: data.length, data };
+      results[table] = { count: data.length, source, data: data.slice(0, 5) };
     }
     
-    res.json({
-      timestamp: new Date().toISOString(),
-      tables: Object.keys(results),
-      results
-    });
+    res.json({ tables: Object.keys(results), summary: Object.fromEntries(Object.entries(results).map(([k, v]) => [k, v.count])), data: results });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
 });
 
-  console.log('HARZ Cloud v2.0 running on port ' + PORT);
-  console.log('HARZ Cloud v4.0 — Complete Platform: RBAC + RLS + SSO + Push + Webhooks + Agents + Memory + Analytics + Sessions + Storage + CDN + Rate Limit + Email + SMS + Search + Scheduler + API Keys + 2FA + WebSocket + Export + Audit + Backup');
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({
+    error: 'Not found',
+    path: req.path,
+    available: [
+      'GET /health',
+      'POST /auth/signup', 'POST /auth/login',
+      'GET /rbac/roles', 'GET /rbac/my-permissions', 'GET /rbac/permissions/:entity',
+      'PUT /rbac/user-role',
+      'GET/POST /api/:entity', 'GET/PUT/DELETE /api/:entity/:id',
+      'POST /paystack/initialize', 'GET /paystack/verify/:reference',
+      'POST /agent/chat',
+      'GET /backup/export',
+      'GET /audit/log',
+      'GET /approvals/pending', 'POST /approvals/:id/:decision',
+      'GET /sso/login', 'POST /sso/authenticate', 'POST /sso/verify',
+      'POST /sso/refresh', 'POST /sso/platform-token',
+      'GET /sso/platforms', 'GET /sso/login-url/:platformId',
+      'POST /sso/logout', 'POST /sso/logout-all', 'GET /sso/sessions',
+      'GET /push/vapid-key', 'POST /push/subscribe', 'POST /push/unsubscribe',
+      'POST /push/send', 'POST /push/broadcast', 'POST /push/platform',
+      'GET /push/templates', 'GET /push/my-devices', 'GET /push/history',
+      'POST /push/custom',
+      'GET /webhooks/providers', 'POST /webhooks/register', 'GET /webhooks/registered',
+      'PUT /webhooks/:id/toggle', 'POST /webhooks/:provider', 'GET /webhooks/:provider',
+      'GET /webhooks/history',
+      'GET /webhooks/all-providers',
+      'POST /webhooks/google', 'POST /webhooks/slack', 'POST /webhooks/notion',
+      'POST /webhooks/hubspot', 'POST /webhooks/discord',
+      'POST /webhooks/stripe', 'POST /webhooks/resellerclub',
+      'GET /agents/list', 'GET /agents/status/all', 'GET /agents/:id/status',
+      'POST /agents/delegate', 'POST /agents/auto-route', 'POST /agents/tasks/:id/execute',
+      'GET /agents/tasks', 'GET /agents/tasks/:id', 'POST /agents/pipeline',
+      'POST /agents/broadcast', 'GET /agents/messages', 'POST /agents/tasks/:id/cancel',
+      'POST /memory/store', 'GET /memory/retrieve', 'GET /memory/context',
+      'POST /memory/conversation', 'POST /memory/fact', 'POST /memory/preference',
+      'POST /memory/instruction', 'GET /memory/search', 'GET /memory/stats',
+      'POST /memory/share', 'DELETE /memory/:id', 'GET /memory/types', 'POST /memory/consolidate',
+      'POST /analytics/track', 'POST /analytics/pageview', 'POST /analytics/purchase',
+      'GET /analytics/summary', 'GET /analytics/active-users',
+      'POST /analytics/funnel', 'GET /analytics/user-journey/:email', 'GET /analytics/event-types',
+      'POST /session/start', 'POST /session/:id/event', 'POST /session/:id/end',
+      'GET /session/:id/replay', 'GET /session/heatmap', 'GET /session/list', 'GET /session/stats',
+      'POST /storage/upload', 'POST /storage/upload-batch',
+      'POST /storage/sign-url', 'GET /storage/info/:filename',
+      'DELETE /storage/:filename', 'GET /storage/list', 'GET /storage/stats',
+      'GET /storage/types', 'GET /cdn/:filename', 'GET /cdn/thumbnails/:filename',
+      'GET /cdn/private/:filename', 'GET /cdn/:filename/:size',
+      'GET /cdn/config', 'GET /cdn/delivery/:filename', 'GET /cdn/stats',
+      'GET /cdn/quota', 'POST /cdn/purge', 'POST /cdn/purge-all',
+      'GET /cdn/secure/:filename', 'GET /cdn/optimize/:filename/:width/:quality?',
+      'POST /cdn/prewarm', 'GET /cdn/report',
+      'GET /rate-limit/status',
+      'POST /email/send', 'GET /email/templates', 'GET /email/history',
+      'POST /sms/send', 'GET /sms/templates',
+      'GET /search',
+      'GET /scheduler/jobs', 'POST /scheduler/start', 'POST /scheduler/stop',
+      'POST /api-keys/generate', 'GET /api-keys/list', 'DELETE /api-keys/:id/revoke',
+      'POST /auth/password-reset/request', 'POST /auth/password-reset/verify',
+      'POST /auth/2fa/enable', 'POST /auth/2fa/verify', 'POST /auth/2fa/generate',
+      'GET /ws/status', 'POST /ws/broadcast',
+      'GET /export/:entity', 'GET /export-all', 'POST /import/:entity',
+      'GET /bridge/status', 'POST /bridge/sync-from-base44', 'POST /bridge/sync-to-base44',
+      'GET /bridge/entity/:table', 'POST /bridge/entity/:table', 'PUT /bridge/entity/:table/:id',
+      'DELETE /bridge/entity/:table/:id', 'GET /bridge/ecosystem', 'GET /bridge/revenue',
+      'POST /bridge/agent-chat', 'GET /bridge/orders', 'GET /bridge/crm',
+      'GET /bridge/products', 'GET /bridge/mapping', 'GET /bridge/all-data'
+    ]
+  });
+});
+
+app.listen(PORT, () => {
+  console.log('HARZ Cloud v5.1 running on port ' + PORT);
+  console.log('HARZ Cloud v5.1 — Complete Platform: RBAC + RLS + SSO + Push + Webhooks + Agents + Memory + Analytics + Sessions + Storage + CDN + Rate Limit + Email + SMS + Search + Scheduler + API Keys + 2FA + WebSocket + Export + Audit + Backup + Bridge');
   console.log('Roles: owner, admin, manager, user, agent, guest');
 });
 
