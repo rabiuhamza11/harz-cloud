@@ -1,6 +1,6 @@
 {
   "name": "harz-cloud",
-  "version": "3.3.0",
+  "version": "5.1.0",
   "description": "HARZ Cloud Backend \u2014 Independent Infrastructure for HARZ Digital Services",
   "main": "server.js",
   "scripts": {

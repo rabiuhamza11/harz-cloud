@@ -171,7 +171,7 @@ app.get('/health', (req, res) => {
   res.json({
     status: 'operational',
     service: 'HARZ Cloud Backend',
-    version: '5.0.0',
+    version: '5.1.0',
     features: ['RBAC', 'RLS', 'JWT', 'SSO', 'Push', 'Webhooks (16)', 'Agents', 'Memory', 'Analytics', 'Sessions', 'Storage', 'CDN', 'Rate Limiting', 'Email', 'SMS', 'Search', 'Scheduler', 'API Keys', '2FA', 'Password Reset', 'WebSocket', 'Data Export', 'Audit', 'Backup', 'Approval', 'Base44 Bridge (110+ entities)'],
     timestamp: new Date().toISOString(),
     uptime: process.uptime()
@@ -596,7 +596,7 @@ app.get('/backup/export', authenticate, async (req, res) => {
       exported_at: new Date().toISOString(),
       exported_by: req.user.email,
       entity_count: entities.length,
-      version: '5.0.0'
+      version: '5.1.0'
     };
     
     await auditLog(req.user, 'export', 'backup', null, { entities: entities.length });
