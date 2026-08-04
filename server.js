@@ -2977,7 +2977,7 @@ app.get('/bridge/revenue', async (req, res) => {
   }
 });
 
-// Agent chat (via Groq — Qwen 3.6-27B + Llama 3.3-70B fallback)
+// Agent chat (via Nemotron on OpenRouter)
 app.post('/bridge/agent-chat', async (req, res) => {
   try {
     const { agent, message, sender } = req.body;
@@ -3002,7 +3002,11 @@ app.post('/bridge/agent-chat', async (req, res) => {
       { role: 'user', content: message }
     ];
 
-    const models = ['qwen/qwen3.6-27b', 'llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
+    const models = [
+      'nvidia/nemotron-3-super-120b-a12b:free',
+      'nvidia/nemotron-nano-9b-v2:free',
+      'openai/gpt-oss-20b:free'
+    ];
     const tried = new Set();
 
     for (const m of models) {
@@ -3010,11 +3014,13 @@ app.post('/bridge/agent-chat', async (req, res) => {
       tried.add(m);
 
       try {
-        const groqResp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        const orResp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
-            'Content-Type': 'application/json'
+            'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY || process.env.QWEN_API_KEY}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'https://harz-cloud-backend.onrender.com',
+            'X-Title': 'HARZ AI'
           },
           body: JSON.stringify({
             model: m,
@@ -3024,14 +3030,14 @@ app.post('/bridge/agent-chat', async (req, res) => {
           })
         });
 
-        if (groqResp.ok) {
-          const data = await groqResp.json();
+        if (orResp.ok) {
+          const data = await orResp.json();
           return res.json({
             success: true,
             agent: agent || 'HARZ AI',
             response: data.choices?.[0]?.message?.content || 'No response generated.',
             model: data.model || m,
-            provider: 'groq'
+            provider: 'openrouter'
           });
         }
       } catch (e) {
