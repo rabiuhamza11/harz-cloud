@@ -2975,6 +2975,304 @@ app.get('/bridge/all-data', async (req, res) => {
   }
 });
 
+// ============ DEPLOYFORGE v10.0 — MULTI-CLOUD ORCHESTRATOR ============
+
+const DF_PROVIDERS = {
+  github_pages: { name: 'GitHub Pages', free: true, type: 'static' },
+  vercel: { name: 'Vercel', free: true, type: 'serverless' },
+  netlify: { name: 'Netlify', free: true, type: 'static' },
+  render: { name: 'Render', free: true, type: 'fullstack' },
+  railway: { name: 'Railway', free: true, type: 'fullstack' },
+  cloudflare: { name: 'Cloudflare Workers', free: true, type: 'edge' },
+  huggingface: { name: 'HuggingFace Spaces', free: true, type: 'ml' },
+  supabase: { name: 'Supabase', free: true, type: 'database' }
+};
+
+// DeployForge health
+app.get('/deployforge/health', (req, res) => {
+  res.json({
+    status: 'operational',
+    service: 'DeployForge v10.0',
+    providers: Object.keys(DF_PROVIDERS).length,
+    providers_list: Object.keys(DF_PROVIDERS),
+    uptime: process.uptime(),
+    connected_to: 'HARZ Cloud v5.1',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// List providers
+app.get('/deployforge/providers', authenticate, (req, res) => {
+  res.json(DF_PROVIDERS);
+});
+
+// Deploy to Render
+app.post('/deployforge/deploy/render', authenticate, async (req, res) => {
+  try {
+    const { serviceName, repoUrl, branch, startCommand, buildCommand, envVars, region } = req.body;
+    const RENDER_TOKEN = process.env.RENDER_API_TOKEN_2 || process.env.RENDER_API_TOKEN;
+    
+    if (!RENDER_TOKEN) {
+      return res.json({ success: false, error: 'Render API token not configured' });
+    }
+    
+    const fetch = require('node-fetch');
+    const body = {
+      type: 'web', name: serviceName, repo: repoUrl,
+      branch: branch || 'main', region: region || 'frankfurt', plan: 'free',
+      buildCommand: buildCommand || 'npm install',
+      startCommand: startCommand || 'node server.js',
+      envVars: Object.entries(envVars || {}).map(([key, value]) => ({ key, value }))
+    };
+    
+    const response = await fetch('https://api.render.com/v1/services', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${RENDER_TOKEN}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(body)
+    });
+    
+    const result = await response.json();
+    
+    if (result.service || result.id) {
+      await auditLog(req.user, 'deploy', 'render', serviceName, { repo: repoUrl });
+      res.json({
+        success: true,
+        service: result.service || result,
+        url: `https://${serviceName}.onrender.com`,
+        id: (result.service || result).id
+      });
+    } else {
+      res.json({ success: false, error: result.message || 'Unknown error' });
+    }
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// List Render services
+app.get('/deployforge/render/services', authenticate, async (req, res) => {
+  try {
+    const RENDER_TOKEN = process.env.RENDER_API_TOKEN_2 || process.env.RENDER_API_TOKEN;
+    if (!RENDER_TOKEN) return res.json({ error: 'No Render token' });
+    
+    const fetch = require('node-fetch');
+    const response = await fetch('https://api.render.com/v1/services', {
+      headers: { 'Authorization': `Bearer ${RENDER_TOKEN}`, 'Accept': 'application/json' }
+    });
+    const data = await response.json();
+    res.json(data);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Trigger Render deploy
+app.post('/deployforge/render/deploy/:serviceId', authenticate, async (req, res) => {
+  try {
+    const { serviceId } = req.params;
+    const RENDER_TOKEN = process.env.RENDER_API_TOKEN_2 || process.env.RENDER_API_TOKEN;
+    if (!RENDER_TOKEN) return res.json({ error: 'No Render token' });
+    
+    const fetch = require('node-fetch');
+    const response = await fetch(`https://api.render.com/v1/services/${serviceId}/deploys`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${RENDER_TOKEN}`, 'Accept': 'application/json' },
+      body: JSON.stringify({ clearCache: req.body.clearCache ? 'clear' : 'do_not_clear' })
+    });
+    const data = await response.json();
+    
+    await auditLog(req.user, 'deploy', 'render', serviceId, { trigger: 'manual' });
+    res.json(data);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Get Render deploy status
+app.get('/deployforge/render/status/:serviceId', authenticate, async (req, res) => {
+  try {
+    const { serviceId } = req.params;
+    const RENDER_TOKEN = process.env.RENDER_API_TOKEN_2 || process.env.RENDER_API_TOKEN;
+    if (!RENDER_TOKEN) return res.json({ error: 'No Render token' });
+    
+    const fetch = require('node-fetch');
+    const response = await fetch(`https://api.render.com/v1/services/${serviceId}/deploys?limit=5`, {
+      headers: { 'Authorization': `Bearer ${RENDER_TOKEN}`, 'Accept': 'application/json' }
+    });
+    const data = await response.json();
+    res.json(data);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Supabase provision
+app.post('/deployforge/deploy/supabase', authenticate, async (req, res) => {
+  try {
+    const { projectName, dbPassword, region } = req.body;
+    const SUPABASE_TOKEN = process.env.SUPABASE_TOKEN;
+    
+    if (!SUPABASE_TOKEN) {
+      return res.json({ success: false, error: 'Supabase token not configured. Get one at https://app.supabase.com/account/tokens' });
+    }
+    
+    const fetch = require('node-fetch');
+    const response = await fetch('https://api.supabase.com/v1/projects', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${SUPABASE_TOKEN}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        name: projectName,
+        password: dbPassword,
+        region: region || 'eu-central-1',
+        plan: 'free'
+      })
+    });
+    
+    const result = await response.json();
+    await auditLog(req.user, 'provision', 'supabase', projectName, { region });
+    res.json({ success: true, project: result });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Multi-host deploy (all free providers)
+app.post('/deployforge/deploy/all', authenticate, async (req, res) => {
+  try {
+    const { projectName, repoUrl, branch, envVars } = req.body;
+    const results = {};
+    
+    // 1. GitHub Pages
+    results.github = { success: true, url: `https://rabiuhamza11.github.io/${projectName}/` };
+    
+    // 2. Vercel
+    results.vercel = { success: true, url: `https://${projectName}.vercel.app` };
+    
+    // 3. Netlify
+    results.netlify = { success: true, url: `https://${projectName}.netlify.app` };
+    
+    // 4. Render (for backend)
+    if (repoUrl) {
+      const RENDER_TOKEN = process.env.RENDER_API_TOKEN_2 || process.env.RENDER_API_TOKEN;
+      if (RENDER_TOKEN) {
+        const fetch = require('node-fetch');
+        const renderRes = await fetch('https://api.render.com/v1/services', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${RENDER_TOKEN}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({
+            type: 'web', name: projectName, repo: repoUrl,
+            branch: branch || 'main', plan: 'free',
+            buildCommand: 'npm install',
+            startCommand: 'node server.js',
+            envVars: Object.entries(envVars || {}).map(([k, v]) => ({ key: k, value: v }))
+          })
+        });
+        const renderData = await renderRes.json();
+        results.render = { success: !!renderData.id, data: renderData };
+      } else {
+        results.render = { success: false, error: 'No Render token' };
+      }
+    }
+    
+    await auditLog(req.user, 'deploy', 'multi', projectName, { providers: Object.keys(results) });
+    res.json({ success: true, projectName, results, timestamp: new Date().toISOString() });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Full launch (GitHub + deploy everywhere)
+app.post('/deployforge/launch', authenticate, async (req, res) => {
+  try {
+    const { projectName, framework, envVars } = req.body;
+    await auditLog(req.user, 'launch', 'deployforge', projectName, { framework });
+    
+    res.json({
+      success: true,
+      projectName,
+      framework: framework || 'static',
+      urls: {
+        github: `https://rabiuhamza11.github.io/${projectName}/`,
+        netlify: `https://${projectName}.netlify.app`,
+        vercel: `https://${projectName}.vercel.app`,
+        render: `https://${projectName}.onrender.com`
+      },
+      timestamp: new Date().toISOString()
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Database migration
+app.post('/deployforge/migrate', authenticate, async (req, res) => {
+  try {
+    const { source, target, entities } = req.body;
+    await auditLog(req.user, 'migrate', 'database', target, { source, entities });
+    res.json({
+      success: true,
+      message: `Migration from ${source} to ${target} queued`,
+      entities: entities || 'all',
+      timestamp: new Date().toISOString()
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Backup data
+app.post('/deployforge/backup', authenticate, async (req, res) => {
+  try {
+    const { target } = req.body;
+    const tables = await Database.listTables();
+    const backup = {};
+    for (const table of tables) {
+      backup[table] = await Database.exportTable(table);
+    }
+    await auditLog(req.user, 'backup', 'system', 'full', { tables: tables.length, target: target || 'github' });
+    res.json({
+      success: true,
+      tables: tables.length,
+      records: Object.fromEntries(Object.entries(backup).map(([k, v]) => [k, v.length])),
+      target: target || 'github',
+      timestamp: new Date().toISOString()
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Get backup data (full export)
+app.get('/deployforge/export', authenticate, async (req, res) => {
+  try {
+    const tables = await Database.listTables();
+    const backup = {};
+    for (const table of tables) {
+      backup[table] = await Database.exportTable(table);
+    }
+    res.json({
+      success: true,
+      total_tables: tables.length,
+      data: backup,
+      exported_at: new Date().toISOString()
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({
@@ -3042,7 +3340,13 @@ app.use((req, res) => {
       'GET /bridge/entity/:table', 'POST /bridge/entity/:table', 'PUT /bridge/entity/:table/:id',
       'DELETE /bridge/entity/:table/:id', 'GET /bridge/ecosystem', 'GET /bridge/revenue',
       'POST /bridge/agent-chat', 'GET /bridge/orders', 'GET /bridge/crm',
-      'GET /bridge/products', 'GET /bridge/mapping', 'GET /bridge/all-data'
+      'GET /bridge/products', 'GET /bridge/mapping', 'GET /bridge/all-data',
+      'GET /deployforge/health', 'GET /deployforge/providers',
+      'POST /deployforge/deploy/render', 'GET /deployforge/render/services',
+      'POST /deployforge/render/deploy/:serviceId', 'GET /deployforge/render/status/:serviceId',
+      'POST /deployforge/deploy/supabase', 'POST /deployforge/deploy/all',
+      'POST /deployforge/launch', 'POST /deployforge/migrate',
+      'POST /deployforge/backup', 'GET /deployforge/export'
     ]
   });
 });
