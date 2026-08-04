@@ -171,12 +171,90 @@ app.get('/health', (req, res) => {
   res.json({
     status: 'operational',
     service: 'HARZ Cloud Backend',
-    version: '5.1.0',
+    version: '5.0.0',
     features: ['RBAC', 'RLS', 'JWT', 'SSO', 'Push', 'Webhooks (16)', 'Agents', 'Memory', 'Analytics', 'Sessions', 'Storage', 'CDN', 'Rate Limiting', 'Email', 'SMS', 'Search', 'Scheduler', 'API Keys', '2FA', 'Password Reset', 'WebSocket', 'Data Export', 'Audit', 'Backup', 'Approval', 'Base44 Bridge (110+ entities)'],
     timestamp: new Date().toISOString(),
     uptime: process.uptime()
   });
 });
+
+// === HARZ AI CHAT (Groq-powered) ===
+const HARZ_SYSTEM_PROMPT = `You are HARZ AI, a helpful AI assistant for HARZ Digital Services in Nigeria. You speak English, Hausa, and Pidgin naturally and switch based on the user's language. You are friendly, direct, and knowledgeable about the HARZ ecosystem: 63+ platforms, 468 digital products, 7 AI agents, payments (UBA, Paystack, GDEG, USDT, Gumroad, Paddle), and business services. Keep responses concise (2-4 sentences) unless asked for detail. You are NOT a generic assistant — you are HARZ AI, part of the HARZ Digital Services ecosystem.`;
+
+app.post('/ai/chat', async (req, res) => {
+  try {
+    const { message, system_prompt, model, history, max_tokens, temperature } = req.body;
+    
+    if (!message) {
+      return res.status(400).json({ success: false, error: 'Message required' });
+    }
+
+    const messages = [{ role: 'system', content: system_prompt || HARZ_SYSTEM_PROMPT }];
+    
+    if (Array.isArray(history) && history.length > 0) {
+      for (const h of history.slice(-10)) {
+        if (h.role && h.content) messages.push({ role: h.role, content: h.content });
+      }
+    }
+    messages.push({ role: 'user', content: message });
+
+    const models = [model || 'qwen/qwen3.6-27b', 'llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
+    const tried = new Set();
+    
+    for (const m of models) {
+      if (tried.has(m)) continue;
+      tried.add(m);
+      
+      try {
+        const groqResp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: m,
+            messages,
+            max_tokens: max_tokens || 500,
+            temperature: temperature || 0.7
+          })
+        });
+
+        if (groqResp.ok) {
+          const data = await groqResp.json();
+          return res.json({
+            success: true,
+            response: data.choices?.[0]?.message?.content || 'No response generated.',
+            model: data.model || m,
+            tokens: data.usage?.total_tokens || 0,
+            provider: 'groq'
+          });
+        }
+      } catch (e) {
+        console.log(`Model ${m} error:`, e.message);
+      }
+    }
+
+    res.json({
+      success: false,
+      response: 'HARZ AI is currently unavailable. Please try again.',
+      error: 'All models failed'
+    });
+  } catch (error) {
+    res.json({ success: false, response: 'Connection error.', error: error.message });
+  }
+});
+
+// Simple GET for testing
+app.get('/ai/chat', (req, res) => {
+  res.json({ 
+    status: 'HARZ AI Chat (Groq-powered)', 
+    models: ['qwen/qwen3.6-27b', 'llama-3.3-70b-versatile', 'llama-3.1-8b-instant'],
+    endpoint: 'POST /ai/chat',
+    usage: 'Send {"message":"your text"} to chat with HARZ AI'
+  });
+});
+
 
 // ============ AUTH ROUTES ============
 app.post('/auth/signup', async (req, res) => {
@@ -596,7 +674,7 @@ app.get('/backup/export', authenticate, async (req, res) => {
       exported_at: new Date().toISOString(),
       exported_by: req.user.email,
       entity_count: entities.length,
-      version: '5.1.0'
+      version: '5.0.0'
     };
     
     await auditLog(req.user, 'export', 'backup', null, { entities: entities.length });
@@ -2899,15 +2977,74 @@ app.get('/bridge/revenue', async (req, res) => {
   }
 });
 
-// Agent chat (via Base44 Omega Producer)
+// Agent chat (via Groq — Qwen 3.6-27B + Llama 3.3-70B fallback)
 app.post('/bridge/agent-chat', async (req, res) => {
   try {
     const { agent, message, sender } = req.body;
-    if (!agent || !message) {
-      return res.status(400).json({ error: 'Agent and message required' });
+    if (!message) {
+      return res.status(400).json({ error: 'Message required' });
     }
-    const result = await Bridge.agentChat(agent, message, sender || 'system');
-    res.json(result);
+
+    const agentPrompts = {
+      'harz-ai': HARZ_SYSTEM_PROMPT,
+      'magani': 'You are Magani, the orchestrator AI for HARZ Digital Services. You speak English, Hausa, and Pidgin. You coordinate 7 AI agents and 63+ platforms. Be helpful, direct, and concise.',
+      'hauwa': 'You are Hauwa, the marketing and content agent for HARZ Digital Services. You create ad copy, social media posts, and promotional content in English, Hausa, and Pidgin.',
+      'rabi': 'You are Rabi, the finance and orders agent for HARZ Digital Services. You track payments, monitor orders, and report revenue. Be precise and use numbers.',
+      'aisha': 'You are Aisha, the customer support agent for HARZ Digital Services. You handle customer inquiries on WhatsApp in English, Hausa, and Pidgin. Be warm, direct, and fast.',
+      'nuruddeen': 'You are Nuruddeen, the knowledge agent for HARZ Digital Services. You manage platform health and information.',
+      'danjuma': 'You are Danjuma, the security agent for HARZ Digital Services. You monitor cyber threats and ensure system security.',
+      'default': HARZ_SYSTEM_PROMPT
+    };
+
+    const systemPrompt = agentPrompts[agent] || agentPrompts['default'];
+    const messages = [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: message }
+    ];
+
+    const models = ['qwen/qwen3.6-27b', 'llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
+    const tried = new Set();
+
+    for (const m of models) {
+      if (tried.has(m)) continue;
+      tried.add(m);
+
+      try {
+        const groqResp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: m,
+            messages,
+            max_tokens: 500,
+            temperature: 0.7
+          })
+        });
+
+        if (groqResp.ok) {
+          const data = await groqResp.json();
+          return res.json({
+            success: true,
+            agent: agent || 'HARZ AI',
+            response: data.choices?.[0]?.message?.content || 'No response generated.',
+            model: data.model || m,
+            provider: 'groq'
+          });
+        }
+      } catch (e) {
+        console.log(`Model ${m} error:`, e.message);
+      }
+    }
+
+    res.json({
+      success: false,
+      agent: agent || 'HARZ AI',
+      response: 'HARZ AI is currently unavailable. Please try again.',
+      error: 'All models failed'
+    });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
