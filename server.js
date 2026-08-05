@@ -3411,6 +3411,11 @@ app.get('/deployforge/export', authenticate, async (req, res) => {
 });
 
 
+// ============================================
+// HARZ Cloud v20.0 — Expansion Modules
+// ============================================
+setupV20Modules(app, authenticate, Database);
+
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({
@@ -3488,11 +3493,6 @@ app.use((req, res) => {
     ]
   });
 });
-
-// ============================================
-// HARZ Cloud v20.0 — Expansion Modules
-// ============================================
-setupV20Modules(app, authenticate, Database);
 
 app.listen(PORT, () => {
   console.log('HARZ Cloud v20.0 running on port ' + PORT);
