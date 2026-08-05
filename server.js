@@ -182,6 +182,21 @@ app.get('/health', (req, res) => {
 // === HARZ AI CHAT (Groq-powered) ===
 const HARZ_SYSTEM_PROMPT = `You are HARZ AI, a helpful AI assistant for HARZ Digital Services in Nigeria. You speak English, Hausa, and Pidgin naturally and switch based on the user's language. You are friendly, direct, and knowledgeable about the HARZ ecosystem: 63+ platforms, 468 digital products, 7 AI agents, payments (UBA, Paystack, GDEG, USDT, Gumroad, Paddle), and business services. Keep responses concise (2-4 sentences) unless asked for detail. You are NOT a generic assistant — you are HARZ AI, part of the HARZ Digital Services ecosystem.`;
 
+// HF token: fetch from Cloudflare KV if not in env
+if (!process.env.HF_TOKEN) {
+  setTimeout(async () => {
+    try {
+      const resp = await fetch('https://harz-edge-proxy.harz.workers.dev/api/hf-token');
+      if (resp.ok) {
+        const data = await resp.json();
+        if (data.token) process.env.HF_TOKEN = data.token;
+        console.log('HF_TOKEN fetched from Cloudflare KV');
+      }
+    } catch(e) { console.log('Could not fetch HF token from KV:', e.message); }
+  }, 2000);
+}
+
+
 app.post('/ai/chat', async (req, res) => {
   try {
     const { message, system_prompt, model, history, max_tokens, temperature } = req.body;
@@ -251,17 +266,12 @@ app.post('/ai/chat', async (req, res) => {
       tried.add(m);
       
       try {
-        // Try Hugging Face first, then Groq
-        let apiResp = null;
-        let provider = 'huggingface';
-        
-        if (process.env.HF_TOKEN) {
-          apiResp = await fetch('https://router.huggingface.co/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${process.env.HF_TOKEN}`,
-              'Content-Type': 'application/json'
-            },
+        const groqResp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+            'Content-Type': 'application/json'
+          },
           body: JSON.stringify({
             model: m,
             messages,
@@ -3060,17 +3070,41 @@ app.post('/bridge/agent-chat', async (req, res) => {
       tried.add(m);
 
       try {
-        // Try Hugging Face first, then Groq
-        let apiResp = null;
-        let provider = 'huggingface';
-        
+        // Try Hugging Face first
         if (process.env.HF_TOKEN) {
-          apiResp = await fetch('https://router.huggingface.co/v1/chat/completions', {
+          const hfResp = await fetch('https://router.huggingface.co/v1/chat/completions', {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${process.env.HF_TOKEN}`,
               'Content-Type': 'application/json'
             },
+            body: JSON.stringify({
+              model: 'meta-llama/Llama-3.1-8B-Instruct',
+              messages,
+              max_tokens: 500,
+              temperature: 0.7
+            })
+          });
+
+          if (hfResp.ok) {
+            const data = await hfResp.json();
+            return res.json({
+              success: true,
+              agent: agent || 'HARZ AI',
+              response: data.choices?.[0]?.message?.content || 'No response generated.',
+              model: data.model || m,
+              provider: 'huggingface'
+            });
+          }
+        }
+
+        // Fallback to Groq
+        const groqResp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+            'Content-Type': 'application/json'
+          },
           body: JSON.stringify({
             model: m,
             messages,
