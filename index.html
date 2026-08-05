@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="description" content="HARZ Super App — 63+ platforms, 7 AI agents, multi-currency wallet">
+<meta name="description" content="HARZ Super App — 64+ platforms, 7 AI agents, multi-currency wallet">
 <title>HARZ Super App</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system,system-ui,-sans-serif}
@@ -104,7 +104,7 @@ body{background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;t
 <div class="card">
 <h3>📊 Ecosystem Overview</h3>
 <div class="stat-grid">
-<div class="stat"><div class="num" id="statPlatforms">63+</div><div class="label">Platforms</div></div>
+<div class="stat"><div class="num" id="statPlatforms">64+</div><div class="label">Platforms</div></div>
 <div class="stat"><div class="num" id="statProducts">468</div><div class="label">Products</div></div>
 <div class="stat"><div class="num" id="statAgents">7</div><div class="label">AI Agents</div></div>
 <div class="stat"><div class="num" id="statRevenue">₦0</div><div class="label">Revenue</div></div>
@@ -131,6 +131,14 @@ body{background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;t
 <!-- PLATFORMS -->
 <div class="page" id="page-platforms">
 <div class="section-title">Ecosystem Platforms (24)</div>
+<div class="card" style="padding:14px;margin-bottom:10px;background:linear-gradient(135deg,#1a1f3a,#0d1326);border:1px solid #ff6b35">
+<h3 style="color:#ff6b35;margin-bottom:6px">🤖 HARZ AI Hub — NEW!</h3>
+<p style="font-size:12px;color:var(--muted);margin-bottom:8px">The African AI Model Hub — 9 models, 5 datasets, 4 spaces, live playground</p>
+<div style="display:flex;gap:8px;flex-wrap:wrap">
+<button onclick="open('https://harz-cloud-backend.onrender.com/ai-hub.html')" style="background:#ff6b35;color:#fff;border:none;padding:6px 14px;border-radius:16px;font-size:11px;cursor:pointer">Open AI Hub →</button>
+<button onclick="open('https://harz-cloud-backend.onrender.com/ai-hub')" style="background:var(--card2);color:var(--accent2);border:1px solid var(--accent2);padding:6px 14px;border-radius:16px;font-size:11px;cursor:pointer">API Docs</button>
+</div>
+</div>
 <div class="platform-grid" id="platformGrid"></div>
 <div class="section-title">Store Links</div>
 <div class="card" style="padding:8px">
@@ -608,7 +616,7 @@ if (l.includes('hello') || l.includes('hi') || l.includes('sannu')) r = 'Sannu! 
 else if (l.includes('price') || l.includes('cost') || l.includes('nawa')) r = 'Products range ₦2,000-₦5,000. Check https://hamzarabiu.gumroad.com';
 else if (l.includes('buy') || l.includes('order') || l.includes('sayi')) r = 'Visit https://hamzarabiu.gumroad.com to buy. Payment: UBA transfer, Paystack, USDT, GDEG.';
 else if (l.includes('help') || l.includes('taimaka')) r = 'I can help with products, orders, payments, platforms, and more!';
-else if (l.includes('platform') || l.includes('dandamali')) r = 'We have 63+ platforms. Check the Platforms tab!';
+else if (l.includes('platform') || l.includes('dandamali')) r = 'We have 64+ platforms. Check the Platforms tab!';
 else if (l.includes('agent') || l.includes('wakili')) r = '7 AI agents: Magani, Hauwa, Rabi, Aisha, Nuruddeen, Omega, Danjuma.';
 addMsg(r, 'in');
 }
