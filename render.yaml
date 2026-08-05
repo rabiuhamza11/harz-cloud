@@ -1,6 +1,6 @@
 # HARZ Cloud v20.0 — Render Deployment Config
 # Primary backend: https://harz-cloud-backend.onrender.com
-# Auto-deploys from GitHub: rabiuhamza11/harz-cloud
+# Auto-deploys from GitHub: rabiuhamza11/harz-cloud-backend
 
 services:
   - type: web
@@ -43,10 +43,6 @@ services:
         value: true
       - key: ENABLE_MEMORY
         value: true
-      - key: HF_TOKEN
-        sync: false
-      - key: HF_MODEL
-        value: meta-llama/Llama-3.1-8B-Instruct
 
   - type: cron
     name: harz-daily-backup
