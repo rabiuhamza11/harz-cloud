@@ -199,20 +199,69 @@ app.post('/ai/chat', async (req, res) => {
     }
     messages.push({ role: 'user', content: message });
 
-    const models = [model || 'qwen/qwen3.6-27b', 'llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
+    // Hugging Face models (primary)
+    const hfModels = [
+      model || 'meta-llama/Llama-3.1-8B-Instruct',
+      'meta-llama/Llama-3.1-8B-Instruct',
+      'Qwen/Qwen2.5-7B-Instruct'
+    ];
     const tried = new Set();
     
-    for (const m of models) {
+    // Try Hugging Face first
+    if (process.env.HF_TOKEN) {
+      for (const m of hfModels) {
+        if (tried.has(m)) continue;
+        tried.add(m);
+        
+        try {
+          const hfResp = await fetch('https://router.huggingface.co/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${process.env.HF_TOKEN}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              model: m,
+              messages,
+              max_tokens: max_tokens || 500,
+              temperature: temperature || 0.7
+            })
+          });
+
+          if (hfResp.ok) {
+            const data = await hfResp.json();
+            return res.json({
+              success: true,
+              response: data.choices?.[0]?.message?.content || 'No response generated.',
+              model: data.model || m,
+              tokens: data.usage?.total_tokens || 0,
+              provider: 'huggingface'
+            });
+          }
+        } catch (e) {
+          console.log(`HF model ${m} error:`, e.message);
+        }
+      }
+    }
+
+    // Fallback to Groq
+    const groqModels = ['qwen/qwen3.6-27b', 'llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
+    for (const m of groqModels) {
       if (tried.has(m)) continue;
       tried.add(m);
       
       try {
-        const groqResp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
-            'Content-Type': 'application/json'
-          },
+        // Try Hugging Face first, then Groq
+        let apiResp = null;
+        let provider = 'huggingface';
+        
+        if (process.env.HF_TOKEN) {
+          apiResp = await fetch('https://router.huggingface.co/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${process.env.HF_TOKEN}`,
+              'Content-Type': 'application/json'
+            },
           body: JSON.stringify({
             model: m,
             messages,
@@ -232,7 +281,7 @@ app.post('/ai/chat', async (req, res) => {
           });
         }
       } catch (e) {
-        console.log(`Model ${m} error:`, e.message);
+        console.log(`Groq model ${m} error:`, e.message);
       }
     }
 
@@ -249,8 +298,8 @@ app.post('/ai/chat', async (req, res) => {
 // Simple GET for testing
 app.get('/ai/chat', (req, res) => {
   res.json({ 
-    status: 'HARZ AI Chat (Groq-powered)', 
-    models: ['qwen/qwen3.6-27b', 'llama-3.3-70b-versatile', 'llama-3.1-8b-instant'],
+    status: 'HARZ AI Chat (HuggingFace + Groq fallback)', 
+    models: ['meta-llama/Llama-3.1-8B-Instruct', 'Qwen/Qwen2.5-7B-Instruct', 'qwen/qwen3.6-27b'],
     endpoint: 'POST /ai/chat',
     usage: 'Send {"message":"your text"} to chat with HARZ AI'
   });
@@ -3011,12 +3060,17 @@ app.post('/bridge/agent-chat', async (req, res) => {
       tried.add(m);
 
       try {
-        const groqResp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
-            'Content-Type': 'application/json'
-          },
+        // Try Hugging Face first, then Groq
+        let apiResp = null;
+        let provider = 'huggingface';
+        
+        if (process.env.HF_TOKEN) {
+          apiResp = await fetch('https://router.huggingface.co/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${process.env.HF_TOKEN}`,
+              'Content-Type': 'application/json'
+            },
           body: JSON.stringify({
             model: m,
             messages,
