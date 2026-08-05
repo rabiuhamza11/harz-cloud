@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HARZ AI Hub — The African AI Model Hub</title>
+  <meta name="description" content="Browse, run, and share AI models built for Africa. Hausa, English, Pidgin, and more.">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg: #0a0a0a; --surface: #161616; --surface2: #1e1e1e;
+      --border: #2a2a2a; --text: #e8e8e8; --text2: #888;
+      --primary: #ff6b35; --primary2: #ff8c5a; --accent: #4ecdc4;
+      --green: #2ecc71; --blue: #3498db; --purple: #9b59b6; --yellow: #f1c40f;
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+    a { color: var(--primary); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; align-items: center; gap: 24px; position: sticky; top: 0; z-index: 100; }
+    .logo { font-size: 1.4rem; font-weight: 800; color: var(--primary); white-space: nowrap; }
+    .logo span { color: var(--text); }
+    .nav { display: flex; gap: 20px; flex: 1; }
+    .nav a { color: var(--text2); font-size: 0.95rem; font-weight: 500; }
+    .nav a:hover, .nav a.active { color: var(--primary); text-decoration: none; }
+    .search-box { background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 8px 16px; color: var(--text); width: 300px; font-size: 0.9rem; }
+    .search-box:focus { outline: none; border-color: var(--primary); }
+    .btn { padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; border: none; font-size: 0.9rem; }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { background: var(--primary2); }
+    .hero { text-align: center; padding: 80px 24px 60px; background: linear-gradient(180deg, var(--surface), var(--bg)); }
+    .hero h1 { font-size: 3rem; font-weight: 800; margin-bottom: 16px; }
+    .hero h1 .gradient { background: linear-gradient(135deg, var(--primary), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .hero p { font-size: 1.2rem; color: var(--text2); max-width: 600px; margin: 0 auto 32px; }
+    .hero-stats { display: flex; justify-content: center; gap: 40px; margin-top: 40px; flex-wrap: wrap; }
+    .stat { text-align: center; }
+    .stat .num { font-size: 2rem; font-weight: 800; color: var(--primary); }
+    .stat .label { color: var(--text2); font-size: 0.85rem; text-transform: uppercase; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+    .section { padding: 40px 0; }
+    .section-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 24px; }
+    .models-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+    .model-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; transition: 0.2s; cursor: pointer; }
+    .model-card:hover { border-color: var(--primary); transform: translateY(-2px); }
+    .model-card .top { display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px; }
+    .model-card .name { font-weight: 700; font-size: 1.1rem; }
+    .model-card .cat { font-size: 0.75rem; padding: 3px 10px; border-radius: 12px; background: var(--surface2); color: var(--accent); text-transform: uppercase; }
+    .model-card .desc { color: var(--text2); font-size: 0.9rem; margin-bottom: 12px; }
+    .model-card .tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+    .model-card .tag { font-size: 0.75rem; padding: 2px 8px; border-radius: 4px; background: var(--surface2); color: var(--text2); }
+    .model-card .footer { display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text2); padding-top: 12px; border-top: 1px solid var(--border); }
+    .featured-badge { background: var(--primary); color: white; font-size: 0.7rem; padding: 2px 8px; border-radius: 4px; }
+    .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
+    .tab { padding: 12px 20px; cursor: pointer; color: var(--text2); font-weight: 600; border-bottom: 2px solid transparent; }
+    .tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .datasets-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+    .dataset-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+    .dataset-card:hover { border-color: var(--accent); }
+    .spaces-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+    .space-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; text-align: center; }
+    .space-card .icon { font-size: 2.5rem; margin-bottom: 12px; }
+    .status-live { background: rgba(46,204,113,0.15); color: var(--green); padding: 3px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
+    .status-coming { background: rgba(241,196,15,0.15); color: var(--yellow); padding: 3px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
+    .chat-demo { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px; }
+    .chat-messages { min-height: 200px; max-height: 400px; overflow-y: auto; margin-bottom: 16px; }
+    .chat-msg { margin-bottom: 12px; padding: 10px 14px; border-radius: 8px; max-width: 80%; }
+    .chat-msg.user { background: var(--primary); color: white; margin-left: auto; }
+    .chat-msg.ai { background: var(--surface2); }
+    .chat-msg .role { font-size: 0.75rem; color: var(--text2); margin-bottom: 4px; }
+    .chat-input { display: flex; gap: 8px; }
+    .chat-input input { flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; color: var(--text); }
+    .chat-input input:focus { outline: none; border-color: var(--primary); }
+    .model-select { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px; color: var(--text); }
+    .footer { text-align: center; padding: 40px 24px; border-top: 1px solid var(--border); color: var(--text2); font-size: 0.85rem; }
+    @media (max-width: 768px) { .hero h1 { font-size: 2rem; } .nav { display: none; } .search-box { width: 100%; } }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">HARZ <span>AI Hub</span></div>
+    <nav class="nav">
+      <a href="#" class="active" onclick="switchTab('models')">Models</a>
+      <a href="#" onclick="switchTab('datasets')">Datasets</a>
+      <a href="#" onclick="switchTab('spaces')">Spaces</a>
+      <a href="#" onclick="switchTab('leaderboard')">Leaderboard</a>
+      <a href="#" onclick="switchTab('playground')">Playground</a>
+    </nav>
+    <input type="text" class="search-box" placeholder="Search models..." id="searchInput">
+    <button class="btn btn-primary" onclick="switchTab('playground')">Try AI</button>
+  </div>
+
+  <div class="hero">
+    <h1>The African <span class="gradient">AI Model Hub</span></h1>
+    <p>Browse, run, and share AI models built for Africa. Hausa, English, Pidgin powered by Hugging Face, delivered by HARZ Cloud.</p>
+    <div class="hero-stats">
+      <div class="stat"><div class="num">9</div><div class="label">Models</div></div>
+      <div class="stat"><div class="num">5</div><div class="label">Datasets</div></div>
+      <div class="stat"><div class="num">4</div><div class="label">Spaces</div></div>
+      <div class="stat"><div class="num">7</div><div class="label">Languages</div></div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('models')">Models</div>
+      <div class="tab" onclick="switchTab('datasets')">Datasets</div>
+      <div class="tab" onclick="switchTab('spaces')">Spaces</div>
+      <div class="tab" onclick="switchTab('leaderboard')">Leaderboard</div>
+      <div class="tab" onclick="switchTab('playground')">Playground</div>
+    </div>
+  </div>
+
+  <div class="container section tab-content active" id="tab-models">
+    <div class="section-title">AI Models</div>
+    <div class="models-grid" id="modelsGrid"><p style="color:var(--text2)">Loading models...</p></div>
+  </div>
+
+  <div class="container section tab-content" id="tab-datasets">
+    <div class="section-title">Datasets</div>
+    <div class="datasets-grid" id="datasetsGrid"></div>
+  </div>
+
+  <div class="container section tab-content" id="tab-spaces">
+    <div class="section-title">Spaces - AI Demos</div>
+    <div class="spaces-grid" id="spacesGrid"></div>
+  </div>
+
+  <div class="container section tab-content" id="tab-leaderboard">
+    <div class="section-title">Leaderboard</div>
+    <div id="leaderboardContent"></div>
+  </div>
+
+  <div class="container section tab-content" id="tab-playground">
+    <div class="section-title">AI Playground</div>
+    <div class="chat-demo">
+      <div style="display:flex;gap:12px;margin-bottom:16px;align-items:center;">
+        <label style="color:var(--text2);font-size:0.9rem;">Model:</label>
+        <select class="model-select" id="modelSelect"></select>
+      </div>
+      <div class="chat-messages" id="chatMessages">
+        <div class="chat-msg ai"><div class="role">HARZ AI</div>Sannu! I am HARZ AI. Ask me anything in Hausa, English, or Pidgin.</div>
+      </div>
+      <div class="chat-input">
+        <input type="text" id="chatInput" placeholder="Type your message..." onkeypress="if(event.key==='Enter')sendChat()">
+        <button class="btn btn-primary" onclick="sendChat()">Send</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <p>HARZ AI Hub - The African AI Model Hub</p>
+    <p style="margin-top:8px;">Powered by Hugging Face + HARZ Cloud + Cloudflare Edge</p>
+    <p style="margin-top:8px;">2026 HARZ Digital Services - Built by Rabiu Hamza Mohammed</p>
+  </div>
+
+  <script>
+    const API = 'https://harz-cloud-backend.onrender.com';
+    const API_KEY = 'harz_cloud_live_321424';
+
+    function switchTab(name) {
+      document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', ['models','datasets','spaces','leaderboard','playground'][i] === name));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      document.getElementById('tab-' + name).classList.add('active');
+      if (name === 'models') renderModels();
+      if (name === 'datasets') renderDatasets();
+      if (name === 'spaces') renderSpaces();
+      if (name === 'leaderboard') renderLeaderboard();
+      if (name === 'playground') loadModelSelect();
+    }
+
+    async function fetchAPI(path) {
+      const resp = await fetch(API + path, { headers: { 'x-api-key': API_KEY } });
+      return resp.json();
+    }
+
+    async function renderModels(search) {
+      const grid = document.getElementById('modelsGrid');
+      try {
+        const q = search ? '?search=' + encodeURIComponent(search) : '';
+        const data = await fetchAPI('/ai-hub/models' + q);
+        if (data.models && data.models.length > 0) {
+          grid.innerHTML = data.models.map(m => `
+            <div class="model-card" onclick="loadModel('${m.id}')">
+              <div class="top">
+                <div class="name">${m.name} ${m.is_featured ? '<span class="featured-badge">Featured</span>' : ''}</div>
+                <div class="cat">${m.category}</div>
+              </div>
+              <div class="desc">${m.description}</div>
+              <div class="tags">${m.tags.map(t => '<span class="tag">'+t+'</span>').join('')}</div>
+              <div class="footer">
+                <span>Downloads: ${m.downloads} | Likes: ${m.likes} | ${m.size}</span>
+                <span>${m.license}</span>
+              </div>
+            </div>`).join('');
+        }
+      } catch(e) { grid.innerHTML = '<p style="color:var(--text2)">API may be waking up. Try again in a moment.</p>'; }
+    }
+
+    async function renderDatasets() {
+      const grid = document.getElementById('datasetsGrid');
+      try {
+        const data = await fetchAPI('/ai-hub/datasets');
+        if (data.datasets) {
+          grid.innerHTML = data.datasets.map(d => `
+            <div class="dataset-card">
+              <div class="name" style="font-weight:700;margin-bottom:8px;">${d.name}</div>
+              <div style="color:var(--text2);font-size:0.9rem;margin-bottom:12px;">${d.description}</div>
+              <div>${d.languages.map(l => '<span style="font-size:0.8rem;padding:2px 8px;border-radius:4px;background:var(--surface2);color:var(--accent);margin-right:4px;">'+l+'</span>').join('')}</div>
+              <div style="font-size:0.8rem;color:var(--text2);margin-top:12px;">${d.size} | ${d.format} | ${d.license}</div>
+            </div>`).join('');
+        }
+      } catch(e) { grid.innerHTML = '<p style="color:var(--text2)">Could not load.</p>'; }
+    }
+
+    async function renderSpaces() {
+      const grid = document.getElementById('spacesGrid');
+      try {
+        const data = await fetchAPI('/ai-hub/spaces');
+        const icons = { chat: 'Chat', translation: 'Translate', image: 'Image', speech: 'Speech' };
+        if (data.spaces) {
+          grid.innerHTML = data.spaces.map(s => `
+            <div class="space-card">
+              <div class="icon">${icons[s.type] || 'AI'}</div>
+              <div style="font-weight:700;margin-bottom:8px;">${s.name}</div>
+              <div style="color:var(--text2);font-size:0.9rem;margin-bottom:12px;">${s.description}</div>
+              <div class="${s.status === 'live' ? 'status-live' : 'status-coming'}">${s.status === 'live' ? 'Live' : 'Coming Soon'}</div>
+            </div>`).join('');
+        }
+      } catch(e) { grid.innerHTML = '<p style="color:var(--text2)">Could not load.</p>'; }
+    }
+
+    async function renderLeaderboard() {
+      const el = document.getElementById('leaderboardContent');
+      try {
+        const data = await fetchAPI('/ai-hub/leaderboard');
+        el.innerHTML = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">' +
+          '<div><h3 style="margin-bottom:16px;color:var(--primary);">Top Models</h3>' +
+          data.models.map(m => '<div style="padding:10px 0;border-bottom:1px solid var(--border);">#'+m.rank+' '+m.name+' <span style="color:var(--accent);float:right;">DL '+m.downloads+'</span></div>').join('') +
+          '</div><div><h3 style="margin-bottom:16px;color:var(--primary);">Top Datasets</h3>' +
+          data.datasets.map(d => '<div style="padding:10px 0;border-bottom:1px solid var(--border);">#'+d.rank+' '+d.name+' <span style="color:var(--accent);float:right;">DL '+d.downloads+'</span></div>').join('') +
+          '</div></div>';
+      } catch(e) { el.innerHTML = '<p style="color:var(--text2)">Could not load.</p>'; }
+    }
+
+    async function loadModelSelect() {
+      try {
+        const data = await fetchAPI('/ai-hub/models?type=text-generation');
+        const select = document.getElementById('modelSelect');
+        if (data.models) select.innerHTML = data.models.map(m => '<option value="'+m.id+'">'+m.name+'</option>').join('');
+      } catch(e) { document.getElementById('modelSelect').innerHTML = '<option>harz-llama-3.1-8b</option>'; }
+    }
+
+    async function sendChat() {
+      const input = document.getElementById('chatInput');
+      const messages = document.getElementById('chatMessages');
+      const modelSelect = document.getElementById('modelSelect');
+      const msg = input.value.trim();
+      if (!msg) return;
+      messages.innerHTML += '<div class="chat-msg user"><div class="role">You</div>'+msg+'</div>';
+      input.value = '';
+      messages.scrollTop = messages.scrollHeight;
+      messages.innerHTML += '<div class="chat-msg ai" id="loading"><div class="role">HARZ AI</div>Thinking...</div>';
+      messages.scrollTop = messages.scrollHeight;
+      try {
+        const modelId = modelSelect.value || 'harz-llama-3.1-8b';
+        const resp = await fetch(API + '/ai-hub/models/' + modelId + '/run', {
+          method: 'POST',
+          headers: { 'x-api-key': API_KEY, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ input: msg, max_tokens: 200 })
+        });
+        const data = await resp.json();
+        document.getElementById('loading').remove();
+        if (data.success) {
+          messages.innerHTML += '<div class="chat-msg ai"><div class="role">HARZ AI - '+data.model+'</div>'+data.response+'</div>';
+        } else {
+          messages.innerHTML += '<div class="chat-msg ai"><div class="role">HARZ AI</div>Sorry, could not process. '+data.error+'</div>';
+        }
+      } catch(e) {
+        document.getElementById('loading')?.remove();
+        messages.innerHTML += '<div class="chat-msg ai"><div class="role">HARZ AI</div>Connection error. API may be sleeping.</div>';
+      }
+      messages.scrollTop = messages.scrollHeight;
+    }
+
+    function loadModel(id) { switchTab('playground'); setTimeout(() => { const s = document.getElementById('modelSelect'); if(s) s.value = id; }, 500); }
+    document.getElementById('searchInput').addEventListener('input', e => renderModels(e.target.value));
+    renderModels();
+  </script>
+</body>
+</html>

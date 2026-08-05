@@ -30,6 +30,7 @@ const { AGENTS, createTask, delegateTask, executeTask, createPipeline, broadcast
 const { storeMemory, retrieveMemory, getConversationContext, consolidateMemory, storeConversation, learnFact, storePreference, storeInstruction, deleteMemory, getMemoryStats, searchMemory, shareMemory, MEMORY_TYPES } = require('./memory');
 const { trackEvent, trackPageView, trackPurchase, getAnalyticsSummary, getActiveUsers, getFunnel, getUserJourney, EVENT_TYPES } = require('./analytics');
 const { startSession, recordSessionEvent, endSession, getSessionReplay, getHeatmapData, listSessions, getSessionStats } = require('./session-recorder');
+const { setupAIHub, HARZ_MODELS } = require('./harz-ai-hub');
 const { saveFile, generateSignedUrl, verifySignedUrl, deleteFile, getFileInfo, listFiles, getStorageStats, cdnCacheHeaders, getFileCategory, isBlocked, ensureDirs, PUBLIC_DIR, PRIVATE_DIR, THUMB_DIR, FILE_CATEGORIES, MAX_SIZES } = require('./storage-cdn');
 const { buildCDNHeaders, serveCDNFile, trackBandwidth, purgeCache, purgeAll, getCDNStats, getCDNConfig, checkBandwidthQuota } = require('./cdn-delivery');
 const { checkLimit, middleware: rateLimit, limits } = require('./rate-limiter');
@@ -2263,6 +2264,15 @@ app.get('/session/stats', authenticate, async (req, res) => {
 // Ensure upload directories exist
 ensureDirs();
 
+
+// Serve HARZ AI Hub page
+app.get('/ai-hub.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'ai-hub.html'));
+});
+
+// Serve static files from public directory
+app.use('/public', express.static(path.join(__dirname, 'public')));
+
 // Serve public files via CDN (with cache headers)
 app.get('/cdn/:filename', cdnCacheHeaders, (req, res) => {
   const { filename } = req.params;
@@ -3503,6 +3513,7 @@ app.get('/deployforge/export', authenticate, async (req, res) => {
 // HARZ Cloud v20.0 — Expansion Modules
 // ============================================
 setupV20Modules(app, authenticate, Database);
+setupAIHub(app);
 
 // 404 handler
 app.use((req, res) => {
