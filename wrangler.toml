@@ -1,0 +1,27 @@
+# Cloudflare Pages Configuration for Harz Cloud
+# This replaces Render, Vercel, Railway, and GitHub Pages
+
+name = "harz-cloud"
+compatibility_date = "2024-09-01"
+pages_build_output_dir = "public"
+
+# D1 Database binding — set up in Cloudflare dashboard:
+# 1. Go to Pages > harz-cloud > Settings > Functions
+# 2. Add D1 namespace binding: Variable name = DB, D1 database = harz-cloud-db
+[[d1_databases]]
+binding = "DB"
+database_name = "harz-cloud-db"
+database_id = "REPLACE_WITH_YOUR_D1_ID"
+
+# Environment variables — set in Cloudflare Pages dashboard:
+# Settings > Environment Variables
+# PAYSTACK_SECRET_KEY = your_paystack_secret_key
+# GDEG_WALLET_ADDRESS = 0xdE2c45A0c25dC290aF51347f95D82EBbe51fe3C1
+# HARZ_BUSINESS_EMAIL = harzco.business@gmail.com
+# USD_TO_NGN_RATE = 1600
+
+[vars]
+PAYSTACK_SECRET_KEY = ""
+GDEG_WALLET_ADDRESS = "0xdE2c45A0c25dC290aF51347f95D82EBbe51fe3C1"
+HARZ_BUSINESS_EMAIL = "harzco.business@gmail.com"
+USD_TO_NGN_RATE = "1600"
