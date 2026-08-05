@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<meta name="theme-color" content="#0a0e17">
+<title>Harz Exchange — Crypto Trading & P2P Marketplace</title>
+<meta name="description" content="Trade BTC, ETH, USDT, BNB, GDEG with Naira. P2P escrow, spot trading, live prices. Bank transfer, Paystack, USDT, GDEG payments.">
+<style>
+:root{--p1:#f0b90b;--p2:#f5a623;--green:#0ecb81;--red:#f6465d;--bg:#0b0e11;--card:#1e2329;--card2:#181a20;--text:#eaecef;--muted:#848e9c;--border:#2b3139;--dark:#0a0e17;--blue:#4a90d9}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:'SF Pro Display',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--p1);border-radius:4px}
+
+.header{background:var(--dark);border-bottom:1px solid var(--border);padding:12px 16px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100}
+.header h1{font-size:1.1rem;font-weight:700;color:var(--p1)}
+.header .sub{font-size:.6rem;color:var(--muted)}
+.badge-live{background:rgba(14,203,129,.12);color:var(--green);padding:2px 8px;border-radius:10px;font-size:.55rem;font-weight:600;display:flex;align-items:center;gap:4px}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%{opacity:1}50%{opacity:.4}100%{opacity:1}}
+
+.kpi-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:14px}
+.kpi{background:var(--card);border-radius:10px;padding:12px}
+.kpi-lbl{font-size:.58rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.kpi-val{font-size:1.2rem;font-weight:700;margin:3px 0}
+.kpi-sub{font-size:.58rem;color:var(--muted)}
+
+.section{padding:0 14px;margin-bottom:16px}
+.section-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.section-title{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.section-link{font-size:.62rem;color:var(--p1);cursor:pointer}
+
+.tabs{display:flex;gap:0;background:var(--card2);border-radius:10px;padding:3px;margin:0 14px 12px}
+.tab{flex:1;text-align:center;padding:8px;border-radius:8px;font-size:.68rem;font-weight:600;cursor:pointer;color:var(--muted);transition:.2s}
+.tab.active{background:var(--p1);color:var(--dark)}
+
+.page{display:none;animation:fadeIn .3s}
+.page.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.page-head{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--border)}
+.page-head .back{font-size:1.2rem;cursor:pointer;color:var(--muted)}
+.page-head h2{font-size:.85rem;font-weight:700}
+
+.card{background:var(--card);border-radius:10px;padding:10px;margin-bottom:8px;cursor:pointer;transition:.2s}
+.card:active{transform:scale(.98)}
+.card-row{display:flex;align-items:center;gap:10px}
+.card-info{flex:1;min-width:0}
+.card-title{font-size:.72rem;font-weight:600}
+.card-desc{font-size:.6rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.pill{display:inline-block;padding:1px 6px;border-radius:6px;font-size:.54rem;font-weight:600}
+.pill.green{background:rgba(14,203,129,.12);color:var(--green)}
+.pill.red{background:rgba(246,70,93,.12);color:var(--red)}
+.pill.yellow{background:rgba(240,185,11,.12);color:var(--p1)}
+.pill.blue{background:rgba(74,144,217,.12);color:var(--blue)}
+.pill.gray{background:rgba(132,142,156,.12);color:var(--muted)}
+
+.pair-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);cursor:pointer;transition:.15s}
+.pair-row:active{background:var(--card2)}
+.pair-icon{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.85rem;font-weight:700;flex-shrink:0}
+.pair-info{flex:1;min-width:0}
+.pair-name{font-size:.72rem;font-weight:600}
+.pair-price{font-size:.6rem;color:var(--muted)}
+.pair-change{font-size:.68rem;font-weight:600;text-align:right}
+.positive{color:var(--green)}
+.negative{color:var(--red)}
+
+.orderbook{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--card);border-radius:10px;overflow:hidden}
+.ob-side{padding:8px}
+.ob-head{font-size:.55rem;color:var(--muted);text-transform:uppercase;display:flex;justify-content:space-between;margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--border)}
+.ob-row{display:flex;justify-content:space-between;font-size:.62rem;padding:3px 0;cursor:pointer;position:relative;overflow:hidden}
+.ob-row .bar{position:absolute;right:0;top:0;bottom:0;opacity:.08;border-radius:2px}
+.ob-row.buy .bar{background:var(--green)}
+.ob-row.sell .bar{background:var(--red)}
+.ob-row .p{font-weight:600;position:relative;z-index:1}
+.ob-row .a{color:var(--muted);position:relative;z-index:1}
+
+.trade-box{background:var(--card);border-radius:10px;padding:12px;margin-bottom:8px}
+.trade-tabs{display:flex;gap:0;margin-bottom:10px}
+.trade-tab{flex:1;text-align:center;padding:6px;border-radius:6px;font-size:.7rem;font-weight:600;cursor:pointer}
+.trade-tab.buy{background:rgba(14,203,129,.1);color:var(--green)}
+.trade-tab.sell{background:rgba(246,70,93,.1);color:var(--red)}
+.trade-tab.active.buy{background:var(--green);color:#fff}
+.trade-tab.active.sell{background:var(--red);color:#fff}
+.input-group{margin-bottom:8px}
+.input-label{font-size:.58rem;color:var(--muted);margin-bottom:3px;text-transform:uppercase}
+.input-box{background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;display:flex;align-items:center;justify-content:space-between}
+.input-box input{background:transparent;border:none;color:var(--text);font-size:.85rem;font-weight:600;width:100%;outline:none}
+.input-box .unit{font-size:.65rem;color:var(--muted);margin-left:6px}
+.total-box{background:var(--card2);border-radius:8px;padding:8px 10px;margin-top:4px;display:flex;justify-content:space-between;align-items:center}
+.total-label{font-size:.6rem;color:var(--muted)}
+.total-val{font-size:.85rem;font-weight:700;color:var(--p1)}
+.btn-trade{width:100%;padding:10px;border-radius:8px;border:none;font-size:.75rem;font-weight:700;margin-top:8px;cursor:pointer;color:#fff}
+.btn-buy{background:var(--green)}
+.btn-sell{background:var(--red)}
+
+.p2p-card{background:var(--card);border-radius:10px;padding:12px;margin-bottom:8px;cursor:pointer;transition:.2s}
+.p2p-card:active{transform:scale(.98)}
+.p2p-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+.p2p-user{display:flex;align-items:center;gap:8px}
+.p2p-avatar{width:32px;height:32px;border-radius:50%;background:var(--p1);color:var(--dark);display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700}
+.p2p-name{font-size:.72rem;font-weight:600}
+.p2p-meta{font-size:.56rem;color:var(--muted)}
+.p2p-price{text-align:right}
+.p2p-price-val{font-size:.95rem;font-weight:700;color:var(--green)}
+.p2p-price-unit{font-size:.55rem;color:var(--muted)}
+.p2p-bottom{display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)}
+.p2p-limit{font-size:.6rem;color:var(--muted)}
+.p2p-pm{display:flex;gap:4px;flex-wrap:wrap}
+.pm-tag{background:var(--card2);border:1px solid var(--border);border-radius:4px;padding:1px 5px;font-size:.52rem;color:var(--muted)}
+
+.wallet-card{background:linear-gradient(135deg,var(--card),var(--card2));border-radius:14px;padding:16px;margin-bottom:10px;position:relative;overflow:hidden}
+.wallet-card::before{content:'';position:absolute;top:-20px;right:-20px;width:100px;height:100px;border-radius:50%;background:radial-gradient(circle,rgba(240,185,11,.06),transparent)}
+.wallet-balance{font-size:1.8rem;font-weight:800;margin:6px 0}
+.wallet-label{font-size:.58rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+.wallet-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.wallet-item{text-align:center;background:var(--card2);border-radius:8px;padding:8px}
+.wallet-item .v{font-size:.78rem;font-weight:700}
+.wallet-item .l{font-size:.52rem;color:var(--muted)}
+
+.deposit-row{display:flex;align-items:center;gap:10px;padding:10px;border-bottom:1px solid var(--border)}
+.deposit-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1rem}
+.deposit-info{flex:1}
+.deposit-name{font-size:.72rem;font-weight:600}
+.deposit-addr{font-size:.58rem;color:var(--muted);font-family:monospace}
+
+.escrow-flow{display:flex;align-items:center;gap:4px;margin:10px 0}
+.escrow-step{flex:1;text-align:center;font-size:.52rem;color:var(--muted)}
+.escrow-dot{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 4px;font-size:.6rem}
+.escrow-dot.active{background:var(--green);color:#fff}
+.escrow-dot.pending{background:var(--border);color:var(--muted)}
+.escrow-line{flex:0;height:2px;background:var(--border);margin:0 -2px;margin-bottom:10px}
+.escrow-line.active{background:var(--green)}
+
+.filter-bar{display:flex;gap:6px;margin-bottom:10px;overflow-x:auto;padding:0 14px}
+.filter-chip{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-size:.6rem;color:var(--muted);white-space:nowrap;cursor:pointer;flex-shrink:0}
+.filter-chip.active{background:var(--p1);color:var(--dark);border-color:var(--p1)}
+
+.tbl{width:100%;border-collapse:collapse;font-size:.66rem}
+.tbl th{text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:.54rem;text-transform:uppercase}
+.tbl td{padding:6px 8px;border-bottom:1px solid var(--border)}
+
+.footer{text-align:center;padding:20px;color:var(--muted);font-size:.6rem}
+</style>
+</head>
+<body>
+
+<div class="header">
+<div><h1>Harz Exchange</h1><div class="sub">Crypto Trading & P2P Marketplace</div></div>
+<div class="badge-live"><span class="dot"></span> LIVE</div>
+</div>
+
+<!-- KPI -->
+<div class="kpi-grid">
+<div class="kpi"><div class="kpi-lbl">24h Volume</div><div class="kpi-val" id="vol24">₦0</div><div class="kpi-sub" id="pairsCount">7 pairs</div></div>
+<div class="kpi"><div class="kpi-lbl">Active P2P</div><div class="kpi-val" id="p2pCount">6</div><div class="kpi-sub">Bank · Paystack · USDT · GDEG</div></div>
+<div class="kpi"><div class="kpi-lbl">BTC/NGN</div><div class="kpi-val" style="font-size:1rem" id="btcPrice">₦24,180,000</div><div class="kpi-sub positive" id="btcChange">+2.4%</div></div>
+<div class="kpi"><div class="kpi-lbl">USDT/NGN</div><div class="kpi-val" style="font-size:1rem" id="usdtPrice">₦1,615</div><div class="kpi-sub positive" id="usdtChange">+0.3%</div></div>
+</div>
+
+<!-- Main Tabs -->
+<div class="tabs">
+<div class="tab active" onclick="switchMain('markets')">Markets</div>
+<div class="tab" onclick="switchMain('trade')">Trade</div>
+<div class="tab" onclick="switchMain('p2p')">P2P</div>
+<div class="tab" onclick="switchMain('wallet')">Wallet</div>
+</div>
+
+<!-- MARKETS PAGE -->
+<div id="page-markets" class="page active">
+<div class="filter-bar" id="cryptoFilter">
+<div class="filter-chip active" onclick="filterPairs(this,'')">All</div>
+<div class="filter-chip" onclick="filterPairs(this,'BTC')">BTC</div>
+<div class="filter-chip" onclick="filterPairs(this,'ETH')">ETH</div>
+<div class="filter-chip" onclick="filterPairs(this,'USDT')">USDT</div>
+<div class="filter-chip" onclick="filterPairs(this,'BNB')">BNB</div>
+<div class="filter-chip" onclick="filterPairs(this,'GDEG')">GDEG</div>
+</div>
+<div class="section" style="padding:0 14px">
+<div id="pairsList"></div>
+</div>
+</div>
+
+<!-- TRADE PAGE -->
+<div id="page-trade" class="page">
+<div class="section" style="padding-top:14px">
+<div class="trade-box">
+<div class="trade-tabs">
+<div class="trade-tab buy active" id="buyTab" onclick="setTradeMode('buy')">Buy</div>
+<div class="trade-tab sell" id="sellTab" onclick="setTradeMode('sell')">Sell</div>
+</div>
+<div class="input-group">
+<div class="input-label">Pair</div>
+<select id="tradePair" style="width:100%;background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:8px;color:var(--text);font-size:.75rem;outline:none">
+<option>BTC/NGN</option><option>ETH/NGN</option><option>USDT/NGN</option><option>BNB/NGN</option><option>GDEG/NGN</option><option>BTC/USDT</option><option>ETH/USDT</option>
+</select>
+</div>
+<div class="input-group">
+<div class="input-label">Price (NGN)</div>
+<div class="input-box"><input type="number" id="tradePrice" placeholder="0.00" value="24180000"><span class="unit" id="tradePairUnit">NGN</span></div>
+</div>
+<div class="input-group">
+<div class="input-label">Amount (BTC)</div>
+<div class="input-box"><input type="number" id="tradeAmount" placeholder="0.00" oninput="calcTradeTotal()"><span class="unit" id="tradeCryptoUnit">BTC</span></div>
+</div>
+<div class="total-box">
+<span class="total-label">Total</span>
+<span class="total-val" id="tradeTotal">₦0.00</span>
+</div>
+<div style="font-size:.56rem;color:var(--muted);margin-top:6px">Fee: <span id="tradeFee">0.15%</span> · Maker 0.1% / Taker 0.15%</div>
+<button class="btn-trade btn-buy" id="tradeBtn" onclick="submitOrder()">Buy BTC</button>
+</div>
+
+<div class="section-head"><span class="section-title">Order Book — BTC/NGN</span></div>
+<div class="orderbook" id="orderBook">
+<div class="ob-side">
+<div class="ob-head"><span>Price</span><span>Amount</span></div>
+<div id="asksList" style="color:var(--red)"></div>
+</div>
+<div class="ob-side">
+<div class="ob-head"><span>Price</span><span>Amount</span></div>
+<div id="bidsList" style="color:var(--green)"></div>
+</div>
+</div>
+<div style="text-align:center;font-size:.56rem;color:var(--muted);margin-top:4px" id="spreadInfo">Spread: Loading...</div>
+</div>
+</div>
+
+<!-- P2P PAGE -->
+<div id="page-p2p" class="page">
+<div style="margin:12px 14px;background:linear-gradient(135deg,rgba(240,185,11,.08),rgba(14,203,129,.04));border:1px solid rgba(240,185,11,.2);border-radius:12px;padding:12px;text-align:center">
+<div style="font-size:.72rem;font-weight:700;color:var(--p1)">🚀 Start Trading Now</div>
+<div style="font-size:.58rem;color:var(--muted);margin:4px 0 8px">Buy BTC, ETH, USDT, GDEG with Naira. Pay via bank transfer, Paystack, or GDEG. Escrow protected.</div>
+<a href="https://wa.me/2348028687857?text=I%20want%20to%20start%20trading%20on%20Harz%20Exchange" target="_blank" style="display:inline-block;padding:6px 16px;border-radius:8px;background:#25d366;color:#fff;font-size:.62rem;font-weight:600;text-decoration:none">💬 Chat on WhatsApp to begin</a>
+</div>
+<div class="filter-bar">
+<div class="filter-chip active" onclick="filterP2P(this,'all')">All</div>
+<div class="filter-chip" onclick="filterP2P(this,'buy')">Buy Crypto</div>
+<div class="filter-chip" onclick="filterP2P(this,'sell')">Sell Crypto</div>
+<div class="filter-chip" onclick="filterP2P(this,'BTC')">BTC</div>
+<div class="filter-chip" onclick="filterP2P(this,'ETH')">ETH</div>
+<div class="filter-chip" onclick="filterP2P(this,'USDT')">USDT</div>
+<div class="filter-chip" onclick="filterP2P(this,'GDEG')">GDEG</div>
+</div>
+<div class="section" style="padding-top:4px">
+<div id="p2pList"></div>
+</div>
+<div class="section" id="p2pCreateSection" style="display:none">
+<div class="section-head"><span class="section-title">Create P2P Listing</span></div>
+<div class="trade-box">
+<div class="input-group">
+<div class="input-label">I want to</div>
+<select id="p2pType" style="width:100%;background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:8px;color:var(--text);font-size:.75rem">
+<option value="sell">Sell Crypto (Receive NGN)</option><option value="buy">Buy Crypto (Pay NGN)</option>
+</select>
+</div>
+<div class="input-group">
+<div class="input-label">Cryptocurrency</div>
+<select id="p2pCrypto" style="width:100%;background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:8px;color:var(--text);font-size:.75rem">
+<option>BTC</option><option>ETH</option><option>USDT</option><option>BNB</option><option>GDEG</option>
+</select>
+</div>
+<div class="input-group">
+<div class="input-label">Price per unit (NGN)</div>
+<div class="input-box"><input type="number" id="p2pPrice" placeholder="0.00"><span class="unit">NGN</span></div>
+</div>
+<div class="input-group">
+<div class="input-label">Amount to trade</div>
+<div class="input-box"><input type="number" id="p2pAmount" placeholder="0.00"><span class="unit" id="p2pCryptoUnit">BTC</span></div>
+</div>
+<div class="input-group">
+<div class="input-label">Payment methods</div>
+<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">
+<label style="font-size:.65rem;color:var(--muted)"><input type="checkbox" value="Bank Transfer" checked> Bank Transfer</label>
+<label style="font-size:.65rem;color:var(--muted)"><input type="checkbox" value="Paystack" checked> Paystack</label>
+<label style="font-size:.65rem;color:var(--muted)"><input type="checkbox" value="USDT" checked> USDT</label>
+<label style="font-size:.65rem;color:var(--muted)"><input type="checkbox" value="GDEG"> GDEG</label>
+</div>
+</div>
+<button class="btn-trade btn-buy" onclick="createP2PListing()">Create Listing</button>
+</div>
+</div>
+<button style="width:calc(100% - 28px);margin:0 14px 16px;padding:8px;border-radius:8px;background:var(--card);border:1px solid var(--border);color:var(--p1);font-size:.68rem;font-weight:600;cursor:pointer" onclick="toggleCreate()">+ Create New Listing</button>
+</div>
+
+<!-- P2P TRADE DETAIL PAGE -->
+<div id="page-p2p-detail" class="page">
+<div class="page-head"><span class="back" onclick="switchMain('p2p')">←</span><h2>P2P Trade</h2></div>
+<div class="section" style="padding-top:14px" id="p2pDetailContent"></div>
+</div>
+
+<!-- WALLET PAGE -->
+<div id="page-wallet" class="page">
+<div class="section" style="padding-top:14px">
+<div class="wallet-card">
+<div class="wallet-label">Total Balance (USD)</div>
+<div class="wallet-balance" id="walletTotal">$1,820.00</div>
+<div style="font-size:.58rem;color:var(--muted)">≈ <span id="walletTotalNgn">₦934,300</span></div>
+<div class="wallet-row">
+<div class="wallet-item"><div class="v" id="wNgn">₦500,000</div><div class="l">NGN</div></div>
+<div class="wallet-item"><div class="v" id="wUsdt">320 USDT</div><div class="l">USDT</div></div>
+<div class="wallet-item"><div class="v" id="wGdeg">15K GDEG</div><div class="l">GDEG</div></div>
+</div>
+<div class="wallet-row">
+<div class="wallet-item"><div class="v" id="wBtc">0.015</div><div class="l">BTC</div></div>
+<div class="wallet-item"><div class="v" id="wEth">0.80</div><div class="l">ETH</div></div>
+<div class="wallet-item"><div class="v" id="wBnb">0.30</div><div class="l">BNB</div></div>
+</div>
+</div>
+
+<div class="section-head"><span class="section-title">Deposit Address</span></div>
+<div class="deposit-row">
+<div class="deposit-icon" style="background:rgba(240,185,11,.12)">💎</div>
+<div class="deposit-info"><div class="deposit-name">GDEG / Polygon</div><div class="deposit-addr" id="depositAddr">0xdE2c...e3C1</div></div>
+<span class="pill yellow" onclick="copyAddr()">Copy</span>
+</div>
+<div class="deposit-row">
+<div class="deposit-icon" style="background:rgba(74,144,217,.12)">₿</div>
+<div class="deposit-info"><div class="deposit-name">USDT (TRC20)</div><div class="deposit-addr">Coming soon</div></div>
+<span class="pill gray">Pending</span>
+</div>
+<div class="deposit-row">
+<div class="deposit-icon" style="background:rgba(14,203,129,.12)">🏦</div>
+<div class="deposit-info"><div class="deposit-name">Bank Transfer (UBA)</div><div class="deposit-addr">2034326424 — Rabiu Hamza Mohammed</div></div>
+<span class="pill green">Active</span>
+</div>
+
+<div class="section-head" style="margin-top:14px"><span class="section-title">Payment Methods</span></div>
+<div class="card"><div class="card-row"><div class="card-icon" style="font-size:1.1rem;width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:rgba(14,203,129,.12)">🏦</div><div class="card-info"><div class="card-title">Bank Transfer (UBA)</div><div class="card-desc">Instant · ₦0 fee · Account: 2034326424</div></div><span class="pill green">Active</span></div></div>
+<div class="card"><div class="card-row"><div class="card-icon" style="font-size:1.1rem;width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:rgba(240,185,11,.12)">💳</div><div class="card-info"><div class="card-title">Paystack</div><div class="card-desc">Card payment · 1.5% fee · Instant</div></div><span class="pill green">Active</span></div></div>
+<div class="card"><div class="card-row"><div class="card-icon" style="font-size:1.1rem;width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:rgba(74,144,217,.12)">₮</div><div class="card-info"><div class="card-title">USDT (TRC20)</div><div class="card-desc">Crypto payment · Network fee only</div></div><span class="pill green">Active</span></div></div>
+<div class="card"><div class="card-row"><div class="card-icon" style="font-size:1.1rem;width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:rgba(240,185,11,.12)">💎</div><div class="card-info"><div class="card-title">GDEG (Polygon)</div><div class="card-desc">Harz token · 10% discount · Network fee only</div></div><span class="pill green">Active</span></div></div>
+</div>
+</div>
+
+<!-- ORDERS PAGE -->
+<div id="page-orders" class="page">
+<div class="page-head"><span class="back" onclick="switchMain('markets')">←</span><h2>My Orders</h2></div>
+<div class="section" style="padding-top:14px">
+<div class="section-head"><span class="section-title">Open Orders</span></div>
+<div id="openOrdersList">
+<div style="text-align:center;color:var(--muted);font-size:.65rem;padding:20px">No open orders</div>
+</div>
+<div class="section-head" style="margin-top:14px"><span class="section-title">P2P Trade History</span></div>
+<div id="tradeHistoryList">
+<div style="text-align:center;color:var(--muted);font-size:.65rem;padding:20px">No P2P trades yet</div>
+</div>
+</div>
+</div>
+
+<div class="footer">Harz Exchange v1.0 — Platform #40 in the Harz Ecosystem<br>7 trading pairs · 6 P2P listings · 5 payment methods · Built by Harz Digital Services</div>
+
+<script>
+const API='/api/harz-exchange';
+let dashboard=null, prices=null, wallet=null, orderBook=null;
+let tradeMode='buy', currentFilter='', p2pFilter='all';
+
+// Format helpers
+function fmtN(n){return '₦'+Number(n).toLocaleString('en-NG',{maximumFractionDigits:0})}
+function fmtC(n,d=2){return Number(n).toFixed(d)}
+function pct(n){return (n>=0?'+'+n:n)+'%'}
+
+// === INIT ===
+async function init(){
+await Promise.all([loadDashboard(),loadPrices(),loadWallet()]);
+renderAll();
+setInterval(loadPrices, 30000); // Refresh prices every 30s
+}
+
+async function loadDashboard(){
+try{
+const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'dashboard'})});
+dashboard=await r.json();
+}catch(e){console.log('Dashboard error:',e)}
+}
+
+async function loadPrices(){
+try{
+const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'prices'})});
+prices=await r.json();
+updatePriceUI();
+}catch(e){console.log('Prices error:',e)}
+}
+
+async function loadWallet(){
+try{
+const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'wallet',user_email:'harzco.business@gmail.com'})});
+const d=await r.json();wallet=d.wallet;
+}catch(e){console.log('Wallet error:',e)}
+}
+
+// === RENDER ===
+function renderAll(){
+renderPairs();
+renderP2P();
+renderWallet();
+renderOrderBook();
+}
+
+function updatePriceUI(){
+if(!prices||!prices.prices)return;
+const p=prices.prices;
+if(p.BTC){document.getElementById('btcPrice').textContent=fmtN(p.BTC.ngn);document.getElementById('btcChange').textContent=pct(p.BTC.change_24h);document.getElementById('btcChange').className=p.BTC.change_24h>=0?'positive':'negative'}
+if(p.USDT){document.getElementById('usdtPrice').textContent=fmtN(p.USDT.ngn);document.getElementById('usdtChange').textContent=pct(p.USDT.change_24h);document.getElementById('usdtChange').className=p.USDT.change_24h>=0?'positive':'negative'}
+renderPairs();
+}
+
+function renderPairs(){
+const list=document.getElementById('pairsList');
+if(!dashboard||!dashboard.pairs){list.innerHTML='<div style="text-align:center;color:var(--muted);font-size:.65rem;padding:20px">Loading pairs...</div>';return}
+const pairs=dashboard.pairs.filter(p=>!currentFilter||p.pair.includes(currentFilter));
+list.innerHTML=pairs.map(p=>{
+const color=p.pair.includes('BTC')?'#f7931a':p.pair.includes('ETH')?'#627eea':p.pair.includes('USDT')?'#26a17b':p.pair.includes('GDEG')?'#f0b90b':'#f3ba2f';
+const changeClass=p.change_24h>=0?'positive':'negative';
+return `<div class="pair-row" onclick="selectPair('${p.pair}')">
+<div class="pair-icon" style="background:${color}33;color:${color}">${p.pair.split('/')[0][0]}</div>
+<div class="pair-info"><div class="pair-name">${p.pair}</div><div class="pair-price">Vol: ${p.volume_24h}M</div></div>
+<div class="pair-change"><div style="font-size:.72rem;font-weight:600">${fmtN(p.last_price)}</div><div class="${changeClass}">${pct(p.change_24h)}</div></div>
+</div>`}).join('');
+if(dashboard){document.getElementById('vol24').textContent=fmtN(dashboard.overview.total_volume_24h*1000000);document.getElementById('pairsCount').textContent=dashboard.overview.pairs+' pairs';document.getElementById('p2pCount').textContent=dashboard.overview.active_p2p_listings}
+}
+
+function renderP2P(){
+const list=document.getElementById('p2pList');
+if(!dashboard||!dashboard.p2p_listings){list.innerHTML='<div style="text-align:center;color:var(--muted);font-size:.65rem;padding:20px">Loading P2P...</div>';return}
+let listings=dashboard.p2p_listings;
+if(p2pFilter==='buy')listings=listings.filter(l=>l.trade_type==='sell'); // user buys
+if(p2pFilter==='sell')listings=listings.filter(l=>l.trade_type==='buy'); // user sells
+if(['BTC','ETH','USDT','BNB','GDEG'].includes(p2pFilter))listings=listings.filter(l=>l.crypto_symbol===p2pFilter);
+list.innerHTML=listings.map(l=>{
+const initials=l.user_name.split(' ').map(w=>w[0]).join('').slice(0,2);
+const pms=l.payment_methods.split(',').map(m=>`<span class="pm-tag">${m.trim()}</span>`).join('');
+const typeLabel=l.trade_type==='sell'?`<span class="pill green">Sell</span>`:`<span class="pill yellow">Buy</span>`;
+return `<div class="p2p-card" onclick="openP2PTrade('${l.ad_id}')">
+<div class="p2p-top">
+<div class="p2p-user"><div class="p2p-avatar">${initials}</div><div><div class="p2p-name">${l.user_name}</div><div class="p2p-meta">${l.verification_level} · ${l.trades_count} trades · ⭐${l.user_rating}</div></div></div>
+<div class="p2p-price"><div class="p2p-price-val">${fmtN(l.price_per_unit)}</div><div class="p2p-price-unit">NGN / ${l.crypto_symbol} ${typeLabel}</div></div>
+</div>
+<div class="p2p-bottom">
+<div class="p2p-limit">Limit: ${fmtN(l.min_order)} — ${fmtN(l.max_order)} NGN</div>
+<div class="p2p-pm">${pms}</div>
+</div>
+<div style="font-size:.56rem;color:var(--muted);margin-top:6px">Available: ${l.crypto_amount} ${l.crypto_symbol}</div>
+</div>`}).join('');
+}
+
+function renderWallet(){
+if(!wallet)return;
+document.getElementById('walletTotal').textContent='$'+fmtC(wallet.total_usd_value);
+document.getElementById('walletTotalNgn').textContent=fmtN(wallet.total_usd_value*1615);
+document.getElementById('wNgn').textContent=fmtN(wallet.ngn_balance);
+document.getElementById('wUsdt').textContent=wallet.usdt_balance+' USDT';
+document.getElementById('wGdeg').textContent=(wallet.gdeg_balance>=1000?(wallet.gdeg_balance/1000).toFixed(0)+'K':wallet.gdeg_balance)+' GDEG';
+document.getElementById('wBtc').textContent=fmtC(wallet.btc_balance,4);
+document.getElementById('wEth').textContent=fmtC(wallet.eth_balance,2);
+document.getElementById('wBnb').textContent=fmtC(wallet.bnb_balance,2);
+document.getElementById('depositAddr').textContent=wallet.deposit_address.slice(0,8)+'...'+wallet.deposit_address.slice(-4);
+}
+
+async function renderOrderBook(){
+try{
+const r=await fetch(API+'?action=orderbook&pair=BTC/NGN');
+const d=await r.json();orderBook=d;
+const asksEl=document.getElementById('asksList');
+const bidsEl=document.getElementById('bidsList');
+if(d.asks.length===0&&d.bids.length===0){
+asksEl.innerHTML='<div style="text-align:center;color:var(--muted);font-size:.56rem;padding:8px">No orders yet</div>';
+bidsEl.innerHTML='<div style="text-align:center;color:var(--muted);font-size:.56rem;padding:8px">No orders yet</div>';
+document.getElementById('spreadInfo').textContent='Spread: — (empty book)';
+return;
+}
+asksEl.innerHTML=d.asks.slice(0,8).map(o=>`<div class="ob-row sell"><div class="bar" style="width:${Math.min(100,o.amount*100)}%"></div><span class="p">${fmtN(o.price)}</span><span class="a">${o.amount}</span></div>`).join('');
+bidsEl.innerHTML=d.bids.slice(0,8).map(o=>`<div class="ob-row buy"><div class="bar" style="width:${Math.min(100,o.amount*100)}%"></div><span class="p">${fmtN(o.price)}</span><span class="a">${o.amount}</span></div>`).join('');
+document.getElementById('spreadInfo').textContent='Spread: '+fmtN(d.spread||0);
+}catch(e){console.log('OrderBook error:',e)}
+}
+
+// === TRADE ===
+function setTradeMode(mode){
+tradeMode=mode;
+document.getElementById('buyTab').classList.toggle('active',mode==='buy');
+document.getElementById('sellTab').classList.toggle('active',mode==='sell');
+const btn=document.getElementById('tradeBtn');
+btn.className='btn-trade '+(mode==='buy'?'btn-buy':'btn-sell');
+btn.textContent=(mode==='buy'?'Buy':'Sell')+' '+document.getElementById('tradePair').value.split('/')[0];
+document.getElementById('tradeFee').textContent=mode==='buy'?'0.15% (taker)':'0.10% (maker)';
+}
+
+document.getElementById('tradePair').addEventListener('change',function(){
+const parts=this.value.split('/');
+document.getElementById('tradeCryptoUnit').textContent=parts[0];
+document.getElementById('tradePairUnit').textContent=parts[1];
+setTradeMode(tradeMode);
+// Update price from dashboard
+if(dashboard){
+const pair=dashboard.pairs.find(p=>p.pair===this.value);
+if(pair)document.getElementById('tradePrice').value=pair.last_price;
+}
+});
+
+function calcTradeTotal(){
+const price=parseFloat(document.getElementById('tradePrice').value)||0;
+const amount=parseFloat(document.getElementById('tradeAmount').value)||0;
+const total=price*amount;
+const feeRate=tradeMode==='buy'?0.0015:0.001;
+document.getElementById('tradeTotal').textContent=fmtN(total);
+}
+
+async function submitOrder(){
+const pair=document.getElementById('tradePair').value;
+const price=parseFloat(document.getElementById('tradePrice').value);
+const amount=parseFloat(document.getElementById('tradeAmount').value);
+if(!price||!amount){alert('Enter price and amount');return}
+try{
+const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'create_order',order_type:tradeMode,pair,price,amount,user_email:'harzco.business@gmail.com',user_name:'Harz Digital Services'})});
+const d=await r.json();
+if(d.status==='ok'){alert('Order created: '+d.order.order_id+'\n'+(tradeMode==='Buy'?'Buy':'Sell')+' '+amount+' '+pair.split('/')[0]+' @ '+fmtN(price));document.getElementById('tradeAmount').value='';calcTradeTotal();renderOrderBook()}
+else{alert('Error: '+d.message)}
+}catch(e){alert('Network error')}
+}
+
+// === P2P ===
+function filterP2P(el,filter){
+document.querySelectorAll('#page-p2p .filter-chip').forEach(c=>c.classList.remove('active'));
+el.classList.add('active');p2pFilter=filter;renderP2P();
+}
+
+function filterPairs(el,filter){
+document.querySelectorAll('#cryptoFilter .filter-chip').forEach(c=>c.classList.remove('active'));
+el.classList.add('active');currentFilter=filter;renderPairs();
+}
+
+let selectedAd=null;
+async function openP2PTrade(adId){
+selectedAd=dashboard.p2p_listings.find(l=>l.ad_id===adId);
+if(!selectedAd)return;
+switchMain('p2p-detail');
+const initials=selectedAd.user_name.split(' ').map(w=>w[0]).join('').slice(0,2);
+const typeLabel=selectedAd.trade_type==='sell'?'You are buying':'You are selling';
+const content=`
+<div class="p2p-card">
+<div class="p2p-top">
+<div class="p2p-user"><div class="p2p-avatar">${initials}</div><div><div class="p2p-name">${selectedAd.user_name}</div><div class="p2p-meta">${selectedAd.verification_level} · ${selectedAd.trades_count} trades · ⭐${selectedAd.user_rating}</div></div></div>
+<div class="p2p-price"><div class="p2p-price-val">${fmtN(selectedAd.price_per_unit)}</div><div class="p2p-price-unit">NGN / ${selectedAd.crypto_symbol}</div></div>
+</div>
+<div style="font-size:.62rem;color:var(--muted);margin-top:8px">${typeLabel} ${selectedAd.crypto_symbol}</div>
+<div style="font-size:.6rem;color:var(--muted);margin-top:4px">Available: ${selectedAd.crypto_amount} ${selectedAd.crypto_symbol} · Limit: ${fmtN(selectedAd.min_order)}—${fmtN(selectedAd.max_order)} NGN</div>
+</div>
+<div class="trade-box">
+<div class="input-group"><div class="input-label">Amount in NGN</div><div class="input-box"><input type="number" id="p2pTradeFiat" placeholder="0.00" oninput="calcP2PAmount()"><span class="unit">NGN</span></div></div>
+<div class="input-group"><div class="input-label">You receive (approx)</div><div class="input-box"><input type="number" id="p2pTradeCrypto" readonly placeholder="0.00"><span class="unit">${selectedAd.crypto_symbol}</span></div></div>
+<div class="input-group"><div class="input-label">Payment Method</div>
+<select id="p2pTradePM" style="width:100%;background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:8px;color:var(--text);font-size:.75rem">
+${selectedAd.payment_methods.split(',').map(m=>`<option>${m.trim()}</option>`).join('')}
+</select></div>
+<div class="escrow-flow">
+<div class="escrow-step"><div class="escrow-dot active">1</div>Create</div>
+<div class="escrow-line pending"></div>
+<div class="escrow-step"><div class="escrow-dot pending">2</div>Pay</div>
+<div class="escrow-line pending"></div>
+<div class="escrow-step"><div class="escrow-dot pending">3</div>Confirm</div>
+<div class="escrow-line pending"></div>
+<div class="escrow-step"><div class="escrow-dot pending">4</div>Release</div>
+</div>
+<button class="btn-trade btn-buy" onclick="startP2PTrade()">Start Trade</button>
+<div style="font-size:.54rem;color:var(--muted);margin-top:8px;text-align:center">🔒 Escrow protected · Crypto held until payment confirmed</div>
+<a href="https://wa.me/2348028687857?text=Hi%20I%20want%20to%20trade%20on%20Harz%20Exchange" target="_blank" style="display:block;text-align:center;margin-top:8px;padding:6px;border-radius:8px;background:rgba(37,211,102,.1);color:#25d366;font-size:.58rem;font-weight:600;text-decoration:none">💬 Contact Harz on WhatsApp</a>
+</div>`;
+document.getElementById('p2pDetailContent').innerHTML=content;
+}
+
+function calcP2PAmount(){
+const fiat=parseFloat(document.getElementById('p2pTradeFiat').value)||0;
+const crypto=fiat/selectedAd.price_per_unit;
+document.getElementById('p2pTradeCrypto').value=crypto.toFixed(6);
+}
+
+async function startP2PTrade(){
+const fiat=parseFloat(document.getElementById('p2pTradeFiat').value);
+if(!fiat||fiat<selectedAd.min_order){alert('Minimum: '+fmtN(selectedAd.min_order));return}
+if(fiat>selectedAd.max_order){alert('Maximum: '+fmtN(selectedAd.max_order));return}
+const crypto=fiat/selectedAd.price_per_unit;
+const pm=document.getElementById('p2pTradePM').value;
+try{
+const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'start_p2p_trade',ad_id:selectedAd.ad_id,crypto_amount:crypto,fiat_amount:fiat,payment_method:pm,buyer_email:'harzco.business@gmail.com',buyer_name:'Harz Digital Services',buyer_phone:'08028687857'})});
+const d=await r.json();
+if(d.status==='ok'){
+showTradeProgress(d.trade, d.payment_instructions);
+}else{alert('Error: '+d.message)}
+}catch(e){alert('Network error')}
+}
+
+let currentTradeData=null;
+function showTradeProgress(trade, paymentInfo){
+currentTradeData={trade,paymentInfo};
+let payDetails='';
+if(trade.payment_method==='Bank Transfer'){
+payDetails=`<div style="background:var(--card2);border-radius:8px;padding:10px;margin:8px 0">
+<div style="font-size:.6rem;color:var(--muted);margin-bottom:4px">Pay to UBA Bank:</div>
+<div style="font-size:.75rem;font-weight:700">Rabiu Hamza Mohammed</div>
+<div style="font-size:.8rem;font-weight:700;color:var(--p1)">2034326424</div>
+<div style="font-size:.55rem;color:var(--muted)">UBA Bank · Nigeria</div>
+</div>`;
+}else if(trade.payment_method==='GDEG'){
+payDetails=`<div style="background:var(--card2);border-radius:8px;padding:10px;margin:8px 0">
+<div style="font-size:.6rem;color:var(--muted);margin-bottom:4px">Send GDEG to (Polygon):</div>
+<div style="font-size:.62rem;font-weight:600;font-family:monospace;word-break:break-all">0xdE2c45A0c25dC290aF51347f95D82EBbe51fe3C1</div>
+<div style="font-size:.55rem;color:var(--muted);margin-top:4px">Network: Polygon · 10% fee discount</div>
+</div>`;
+}else{
+payDetails=`<div style="background:var(--card2);border-radius:8px;padding:10px;margin:8px 0">
+<div style="font-size:.6rem;color:var(--muted)">Payment via ${trade.payment_method}</div>
+<div style="font-size:.6rem;color:var(--muted);margin-top:4px">Contact seller for details: 08028687857</div>
+</div>`;
+}
+const content=`
+<div class="p2p-card">
+<div style="font-size:.7rem;font-weight:600;margin-bottom:4px">Trade ${trade.trade_id}</div>
+<div style="font-size:.62rem;color:var(--muted);margin-bottom:8px">Status: <span class="pill yellow">Payment Pending</span></div>
+<div style="font-size:.68rem;font-weight:600;margin:8px 0 4px">Pay ${fmtN(trade.fiat_amount)}</div>
+${payDetails}
+<div style="font-size:.56rem;color:var(--muted);line-height:1.6;margin-top:8px">
+You are ${trade.trade_type==='sell'?'buying':'selling'}: ${trade.crypto_amount} ${trade.crypto_symbol}<br>
+Rate: ${fmtN(trade.price_per_unit)} NGN/${trade.crypto_symbol}<br>
+Seller: Harz Digital Services · KYC L3<br>
+⏰ Complete payment within 30 minutes
+</div>
+</div>
+<div class="escrow-flow">
+<div class="escrow-step"><div class="escrow-dot active">1</div>Create ✓</div>
+<div class="escrow-line active"></div>
+<div class="escrow-step"><div class="escrow-dot active">2</div>Pay</div>
+<div class="escrow-line pending"></div>
+<div class="escrow-step"><div class="escrow-dot pending">3</div>Confirm</div>
+<div class="escrow-line pending"></div>
+<div class="escrow-step"><div class="escrow-dot pending">4</div>Release</div>
+</div>
+<div class="trade-box">
+<div style="font-size:.58rem;color:var(--muted);margin-bottom:6px">After sending payment, click below. Crypto is locked in escrow until seller confirms.</div>
+<button class="btn-trade btn-buy" onclick="confirmPayment('${trade.trade_id}')">✓ I've Paid — Notify Seller</button>
+<a href="https://wa.me/2348028687857?text=Hi%20I%20just%20started%20trade%20${trade.trade_id}%20on%20Harz%20Exchange" target="_blank" style="display:block;text-align:center;margin-top:8px;padding:8px;border-radius:8px;background:rgba(37,211,102,.1);color:#25d366;font-size:.65rem;font-weight:600;text-decoration:none">💬 Chat seller on WhatsApp</a>
+</div>`;
+document.getElementById('p2pDetailContent').innerHTML=content;
+}
+
+async function confirmPayment(tradeId){
+try{
+const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'confirm_p2p_payment',trade_id:tradeId})});
+const d=await r.json();
+if(d.status==='ok'){
+alert('Payment marked as sent!\n\nSeller will verify and release crypto.\n\nEscrow protects you until seller confirms.');
+document.getElementById('p2pDetailContent').innerHTML=`
+<div class="p2p-card"><div style="text-align:center;padding:20px">
+<div style="font-size:2rem;margin-bottom:8px">⏳</div>
+<div style="font-size:.75rem;font-weight:600">Waiting for Seller Confirmation</div>
+<div style="font-size:.6rem;color:var(--muted);margin-top:6px">Trade ${tradeId}</div>
+<div style="font-size:.58rem;color:var(--muted);margin-top:12px">The seller will verify your payment and release the crypto. This usually takes 5-30 minutes.</div>
+</div></div>
+<div class="trade-box"><button class="btn-trade" style="background:var(--red)" onclick="raiseDispute('${tradeId}')">Raise Dispute</button></div>`;
+}else{alert('Error: '+d.message)}
+}catch(e){alert('Network error')}
+}
+
+async function raiseDispute(tradeId){
+const reason=prompt('Describe the issue:');
+if(!reason)return;
+try{
+const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'raise_dispute',trade_id:tradeId,reason})});
+const d=await r.json();
+if(d.status==='ok'){alert('Dispute raised. Admin will review within 24 hours.')}
+}catch(e){alert('Network error')}
+}
+
+function toggleCreate(){
+const s=document.getElementById('p2pCreateSection');
+s.style.display=s.style.display==='none'?'block':'none';
+}
+
+document.getElementById('p2pCrypto').addEventListener('change',function(){document.getElementById('p2pCryptoUnit').textContent=this.value});
+
+async function createP2PListing(){
+const trade_type=document.getElementById('p2pType').value;
+const crypto_symbol=document.getElementById('p2pCrypto').value;
+const price_per_unit=parseFloat(document.getElementById('p2pPrice').value);
+const crypto_amount=parseFloat(document.getElementById('p2pAmount').value);
+if(!price_per_unit||!crypto_amount){alert('Enter price and amount');return}
+const pms=[...document.querySelectorAll('#p2pCreateSection input[type=checkbox]:checked')].map(c=>c.value).join(',');
+try{
+const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'create_p2p',trade_type,crypto_symbol,fiat_currency:'NGN',price_per_unit,crypto_amount,payment_methods:pms,user_email:'harzco.business@gmail.com',user_name:'Harz Digital Services',user_phone:'08028687857'})});
+const d=await r.json();
+if(d.status==='ok'){alert('Listing created: '+d.listing.ad_id);await loadDashboard();renderP2P();toggleCreate()}
+else{alert('Error: '+d.message)}
+}catch(e){alert('Network error')}
+}
+
+// === WALLET ===
+function copyAddr(){
+if(wallet){navigator.clipboard.writeText(wallet.deposit_address);alert('Address copied!')}
+}
+
+// === NAV ===
+function switchMain(page){
+document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+document.getElementById('page-'+page).classList.add('active');
+document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+// Mark tab active
+const tabs=['markets','trade','p2p','wallet'];
+const idx=tabs.indexOf(page);
+if(idx>=0)document.querySelectorAll('.tab')[idx].classList.add('active');
+window.scrollTo(0,0);
+}
+
+function selectPair(pair){
+switchMain('trade');
+document.getElementById('tradePair').value=pair;
+document.getElementById('tradePair').dispatchEvent(new Event('change'));
+}
+
+// Start
+init();
+</script>
+</body>
+</html>
