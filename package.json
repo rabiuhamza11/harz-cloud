@@ -1,6 +1,6 @@
 {
   "name": "harz-cloud",
-  "version": "5.1.0",
+  "version": "3.3.0",
   "description": "HARZ Cloud Backend \u2014 Independent Infrastructure for HARZ Digital Services",
   "main": "server.js",
   "scripts": {
@@ -25,7 +25,8 @@
     "jsonwebtoken": "^9.0.2",
     "bcryptjs": "^2.4.3",
     "multer": "^1.4.5-lts.1",
-    "node-fetch": "^2.7.0"
+    "node-fetch": "^2.7.0",
+    "dotenv": "^16.4.0"
   },
   "engines": {
     "node": ">=14.0.0"

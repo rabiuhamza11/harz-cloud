@@ -18,6 +18,7 @@ const fs = require('fs');
 const path = require('path');
 const { Database } = require('./database');
 const { Storage } = require('./storage');
+const setupV20Modules = require('./harz-v20-modules');
 const { Paystack } = require('./paystack');
 const { canAccess, isRLSEnforced, isPublicEntity, isAdminEntity, getRoleInfo, listRoles, getAllowedActions } = require('./rbac');
 const { enforceRLS, canAccessRecord, addOwnership, getRLSQueryFilter } = require('./rls');
@@ -171,7 +172,7 @@ app.get('/health', (req, res) => {
   res.json({
     status: 'operational',
     service: 'HARZ Cloud Backend',
-    version: '5.0.0',
+    version: '20.0.0',
     features: ['RBAC', 'RLS', 'JWT', 'SSO', 'Push', 'Webhooks (16)', 'Agents', 'Memory', 'Analytics', 'Sessions', 'Storage', 'CDN', 'Rate Limiting', 'Email', 'SMS', 'Search', 'Scheduler', 'API Keys', '2FA', 'Password Reset', 'WebSocket', 'Data Export', 'Audit', 'Backup', 'Approval', 'Base44 Bridge (110+ entities)'],
     timestamp: new Date().toISOString(),
     uptime: process.uptime()
@@ -674,7 +675,7 @@ app.get('/backup/export', authenticate, async (req, res) => {
       exported_at: new Date().toISOString(),
       exported_by: req.user.email,
       entity_count: entities.length,
-      version: '5.0.0'
+      version: '20.0.0'
     };
     
     await auditLog(req.user, 'export', 'backup', null, { entities: entities.length });
@@ -2977,7 +2978,7 @@ app.get('/bridge/revenue', async (req, res) => {
   }
 });
 
-// Agent chat (via Nemotron on OpenRouter)
+// Agent chat (via Groq — Qwen 3.6-27B + Llama 3.3-70B fallback)
 app.post('/bridge/agent-chat', async (req, res) => {
   try {
     const { agent, message, sender } = req.body;
@@ -3002,11 +3003,7 @@ app.post('/bridge/agent-chat', async (req, res) => {
       { role: 'user', content: message }
     ];
 
-    const models = [
-      'nvidia/nemotron-3-super-120b-a12b:free',
-      'nvidia/nemotron-nano-9b-v2:free',
-      'openai/gpt-oss-20b:free'
-    ];
+    const models = ['qwen/qwen3.6-27b', 'llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
     const tried = new Set();
 
     for (const m of models) {
@@ -3014,13 +3011,11 @@ app.post('/bridge/agent-chat', async (req, res) => {
       tried.add(m);
 
       try {
-        const orResp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        const groqResp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY || process.env.QWEN_API_KEY}`,
-            'Content-Type': 'application/json',
-            'HTTP-Referer': 'https://harz-cloud-backend.onrender.com',
-            'X-Title': 'HARZ AI'
+            'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+            'Content-Type': 'application/json'
           },
           body: JSON.stringify({
             model: m,
@@ -3030,14 +3025,14 @@ app.post('/bridge/agent-chat', async (req, res) => {
           })
         });
 
-        if (orResp.ok) {
-          const data = await orResp.json();
+        if (groqResp.ok) {
+          const data = await groqResp.json();
           return res.json({
             success: true,
             agent: agent || 'HARZ AI',
             response: data.choices?.[0]?.message?.content || 'No response generated.',
             model: data.model || m,
-            provider: 'openrouter'
+            provider: 'groq'
           });
         }
       } catch (e) {
@@ -3139,7 +3134,7 @@ app.get('/deployforge/health', (req, res) => {
     providers: Object.keys(DF_PROVIDERS).length,
     providers_list: Object.keys(DF_PROVIDERS),
     uptime: process.uptime(),
-    connected_to: 'HARZ Cloud v5.1',
+    connected_to: 'HARZ Cloud v20.0',
     timestamp: new Date().toISOString()
   });
 });
@@ -3494,9 +3489,14 @@ app.use((req, res) => {
   });
 });
 
+// ============================================
+// HARZ Cloud v20.0 — Expansion Modules
+// ============================================
+setupV20Modules(app, authenticate, Database);
+
 app.listen(PORT, () => {
-  console.log('HARZ Cloud v5.1 running on port ' + PORT);
-  console.log('HARZ Cloud v5.1 — Complete Platform: RBAC + RLS + SSO + Push + Webhooks + Agents + Memory + Analytics + Sessions + Storage + CDN + Rate Limit + Email + SMS + Search + Scheduler + API Keys + 2FA + WebSocket + Export + Audit + Backup + Bridge');
+  console.log('HARZ Cloud v20.0 running on port ' + PORT);
+  console.log('HARZ Cloud v20.0 — v20.0 MEGA: Templates + Billing + Teams + Notifications + CLI + i18n + Agent Marketplace + Domains + Env Vars + Logs + Security + Advanced Analytics + Marketplace + Events + Diagnostics + Feature Flags + Rate Limits + RBAC + RLS + SSO + Push + Webhooks + Agents + Memory + Analytics + Sessions + Storage + CDN + Email + SMS + Search + Scheduler + API Keys + 2FA + WebSocket');
   console.log('Roles: owner, admin, manager, user, agent, guest');
 });
 

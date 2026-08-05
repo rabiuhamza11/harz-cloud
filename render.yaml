@@ -1,6 +1,6 @@
-# HARZ Cloud v3.3 — Render Deployment Config
-# Deploy at: https://dashboard.render.com → New → Web Service → Connect GitHub repo: rabiuhamza11/harz-cloud
-# render.yaml auto-applies these settings
+# HARZ Cloud v20.0 — Render Deployment Config
+# Primary backend: https://harz-cloud-backend.onrender.com
+# Auto-deploys from GitHub: rabiuhamza11/harz-cloud-backend
 
 services:
   - type: web
@@ -27,28 +27,8 @@ services:
         value: 08028687857
       - key: PAYSTACK_SECRET_KEY
         sync: false
-      - key: PADDLE_WEBHOOK_SECRET
-        sync: false
-      - key: NOWPAYMENTS_IPN_SECRET
-        sync: false
-      - key: GITHUB_WEBHOOK_SECRET
-        sync: false
-      - key: SLACK_SIGNING_SECRET
-        sync: false
-      - key: GOOGLE_WEBHOOK_SECRET
-        sync: false
-      - key: NOTION_WEBHOOK_SECRET
-        sync: false
-      - key: HUBSPOT_CLIENT_SECRET
-        sync: false
       - key: WHATSAPP_VERIFY_TOKEN
         value: harz_verify_321424
-      - key: VAPID_PUBLIC_KEY
-        sync: false
-      - key: VAPID_PRIVATE_KEY
-        sync: false
-      - key: VAPID_SUBJECT
-        value: mailto:harzco.business@gmail.com
       - key: DB_TYPE
         value: file
       - key: DB_PATH
@@ -57,15 +37,9 @@ services:
         value: true
       - key: ENABLE_ANALYTICS
         value: true
-      - key: ENABLE_SESSION_RECORDING
-        value: true
-      - key: ENABLE_CDN
-        value: true
       - key: ENABLE_SSO
         value: true
       - key: ENABLE_WEBHOOKS
-        value: true
-      - key: ENABLE_ORCHESTRATION
         value: true
       - key: ENABLE_MEMORY
         value: true

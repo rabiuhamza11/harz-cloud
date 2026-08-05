@@ -36,6 +36,13 @@ class Paystack {
     return this.request('GET', `/bank/resolve?account_number=${accountNumber}&bank_code=${bankCode}`);
   }
 
+  refund(reference, amount = null) {
+    const data = { transaction: reference };
+    if (amount) data.amount = amount;
+    return this.request('POST', '/refund', data);
+  }
+
+
   request(method, path, data = null) {
     return new Promise((resolve, reject) => {
       const options = {
