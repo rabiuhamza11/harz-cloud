@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Harz Business Dashboard</title>
+<style>
+:root{--p1:#f0b90b;--green:#0ecb81;--red:#f6465d;--bg:#0b0e11;--card:#1e2329;--card2:#181a20;--text:#eaecef;--muted:#848e9c;--border:#2b3139;--blue:#4a90d9;--purple:#9b59b6}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'SF Pro Display',system-ui,sans-serif;background:var(--bg);color:var(--text);padding:16px;max-width:800px;margin:0 auto}
+h1{font-size:1.3rem;color:var(--p1);margin-bottom:4px}
+h2{font-size:.85rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin:20px 0 10px;border-bottom:1px solid var(--border);padding-bottom:6px}
+.sub{font-size:.65rem;color:var(--muted);margin-bottom:16px}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.card{background:var(--card);border-radius:12px;padding:14px}
+.card2{background:var(--card2);border-radius:10px;padding:10px}
+.kpi-lbl{font-size:.58rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.kpi-val{font-size:1.4rem;font-weight:800;margin:4px 0}
+.kpi-sub{font-size:.55rem;color:var(--muted)}
+.status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+.status-dot.green{background:var(--green)}
+.status-dot.red{background:var(--red)}
+.status-dot.yellow{background:var(--p1)}
+.status-dot.gray{background:var(--muted)}
+.ch{display:flex;align-items:center;gap:10px;padding:10px;background:var(--card2);border-radius:10px;margin-bottom:8px}
+.ch-icon{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:700;flex-shrink:0}
+.ch-info{flex:1}
+.ch-name{font-size:.75rem;font-weight:600}
+.ch-status{font-size:.6rem;color:var(--muted)}
+.ch-badge{font-size:.58rem;padding:2px 8px;border-radius:6px;font-weight:600}
+.badge-green{background:rgba(14,203,129,.12);color:var(--green)}
+.badge-red{background:rgba(246,70,93,.12);color:var(--red)}
+.badge-yellow{background:rgba(240,185,11,.12);color:var(--p1)}
+.badge-gray{background:rgba(132,142,156,.12);color:var(--muted)}
+.bar-container{background:var(--card2);border-radius:6px;height:6px;overflow:hidden;margin-top:4px}
+.bar-fill{height:100%;border-radius:6px;transition:.5s}
+.bar-green{background:var(--green)}
+.bar-yellow{background:var(--p1)}
+.bar-red{background:var(--red)}
+table{width:100%;border-collapse:collapse;font-size:.68rem}
+th{text-align:left;padding:8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:.55rem;text-transform:uppercase}
+td{padding:8px;border-bottom:1px solid var(--border)}
+.pos{color:var(--green)}
+.neg{color:var(--red)}
+.btn{display:inline-block;padding:8px 16px;border-radius:8px;font-size:.7rem;font-weight:600;text-decoration:none;color:var(--dark);background:var(--p1);margin-top:12px}
+.footer{text-align:center;padding:20px 0;color:var(--muted);font-size:.55rem}
+</style>
+</head>
+<body>
+
+<h1>Harz Business Dashboard</h1>
+<div class="sub">Live overview · Last updated: <span id="lastUpdate">--</span></div>
+
+<h2>Revenue Overview</h2>
+<div class="grid">
+  <div class="card">
+    <div class="kpi-lbl">Total Revenue (MTD)</div>
+    <div class="kpi-val" style="color:var(--green)" id="totalRevenueNGN">₦0</div>
+    <div class="kpi-sub">$0.00 USD</div>
+  </div>
+  <div class="card">
+    <div class="kpi-lbl">Orders This Month</div>
+    <div class="kpi-val" id="orderCount">0</div>
+    <div class="kpi-sub" id="orderBreakdown">0 completed · 0 pending</div>
+  </div>
+</div>
+
+<h2>Payment Channels (10)</h2>
+<div id="channels"></div>
+
+<h2>GDEG Token Status</h2>
+<div class="card">
+  <div class="grid">
+    <div>
+      <div class="kpi-lbl">Contract Status</div>
+      <div class="kpi-val" style="font-size:1rem;color:var(--red)"><span class="status-dot red"></span>Not Deployed</div>
+    </div>
+    <div>
+      <div class="kpi-lbl">MATIC Balance</div>
+      <div class="kpi-val" style="font-size:1rem">0.00</div>
+    </div>
+  </div>
+  <div style="margin-top:10px">
+    <div class="kpi-lbl">Wallet</div>
+    <div style="font-family:monospace;font-size:.6rem;color:var(--muted);margin-top:4px">0xdE2c45A0c25dC290aF51347f95D82EBbe51fe3C1</div>
+  </div>
+  <div style="margin-top:10px">
+    <div class="kpi-lbl">Tokenomics</div>
+    <div style="font-size:.65rem;margin-top:4px;line-height:1.6">
+      Supply: 100,000,000 GDEG<br>
+      Price: ₦15 / $0.01<br>
+      Ecosystem Discount: 10%<br>
+      Network: Polygon Mainnet
+    </div>
+  </div>
+</div>
+
+<h2>Harz Exchange</h2>
+<div class="card">
+  <div class="grid3">
+    <div class="card2">
+      <div class="kpi-lbl">Pairs</div>
+      <div class="kpi-val" style="font-size:1rem">7</div>
+    </div>
+    <div class="card2">
+      <div class="kpi-lbl">P2P Listings</div>
+      <div class="kpi-val" style="font-size:1rem">6</div>
+    </div>
+    <div class="card2">
+      <div class="kpi-lbl">GDEG/NGN</div>
+      <div class="kpi-val" style="font-size:1rem;color:var(--red)">₦1.95</div>
+      <div class="kpi-sub" style="color:var(--red)">Needs fix → ₦15</div>
+    </div>
+  </div>
+</div>
+
+<h2>System Health</h2>
+<div class="grid">
+  <div class="card">
+    <div class="kpi-lbl">Integration Credits</div>
+    <div class="kpi-val" style="font-size:1rem;color:var(--red)">100/100</div>
+    <div class="bar-container"><div class="bar-fill bar-red" style="width:100%"></div></div>
+    <div class="kpi-sub" style="color:var(--red)">EXHAUSTED — top up needed</div>
+  </div>
+  <div class="card">
+    <div class="kpi-lbl">Message Credits</div>
+    <div class="kpi-val" style="font-size:1rem;color:var(--yellow)">24/445</div>
+    <div class="bar-container"><div class="bar-fill bar-yellow" style="width:5.4%"></div></div>
+    <div class="kpi-sub">~24 remaining</div>
+  </div>
+</div>
+
+<h2>Automations</h2>
+<div id="automations"></div>
+
+<div class="footer">
+  Harz Digital Services · CAC RC 321424 · Built by Harz Digital Services<br>
+  Dashboard v1.0 — Powered by Base44
+</div>
+
+<script>
+const channels = [
+  {name:'UBA Bank Transfer', icon:'🏦', color:'#4a90d9', status:'manual', detail:'2034326424 · Code 033'},
+  {name:'Paystack', icon:'💳', color:'#9b59b6', status:'active', detail:'Test mode · Monitor deployed'},
+  {name:'GDEG Token (Polygon)', icon:'⚡', color:'#f0b90b', status:'pending', detail:'Contract not deployed · 0 MATIC'},
+  {name:'USDT TRC20', icon:'💎', color:'#26a17b', status:'active', detail:'TVE2ia3... · No recent activity'},
+  {name:'Gumroad', icon:'📚', color:'#e88a3a', status:'pending', detail:'Needs API access token'},
+  {name:'Paddle', icon:'🚣', color:'#4a90d9', status:'pending', detail:'API key invalid'},
+  {name:'Payhip', icon:'🛍️', color:'#e74c3c', status:'pending', detail:'API limited — no transaction listing'},
+  {name:'Getly', icon:'🔄', color:'#2ecc71', status:'pending', detail:'No API endpoint found'},
+  {name:'Ko-fi', icon:'☕', color:'#ff6b6b', status:'pending', detail:'Needs API key'},
+  {name:'Payoneer', icon:'🌍', color:'#ff6b00', status:'pending', detail:'KYC pending'},
+];
+
+const statusMap = {
+  active: {badge:'badge-green', label:'ACTIVE', dot:'green'},
+  pending: {badge:'badge-yellow', label:'PENDING', dot:'yellow'},
+  manual: {badge:'badge-blue', label:'MANUAL', dot:'yellow'},
+};
+
+document.getElementById('channels').innerHTML = channels.map(ch => {
+  const s = statusMap[ch.status];
+  return `<div class="ch">
+    <div class="ch-icon" style="background:${ch.color}20;color:${ch.color}">${ch.icon}</div>
+    <div class="ch-info">
+      <div class="ch-name">${ch.name}</div>
+      <div class="ch-status">${ch.detail}</div>
+    </div>
+    <div class="ch-badge ${s.badge}"><span class="status-dot ${s.dot}"></span>${s.label}</div>
+  </div>`;
+}).join('');
+
+const automations = [
+  {name:'Daily Revenue Report', icon:'📊', status:'active', detail:'9:00 PM daily · WhatsApp + Telegram'},
+  {name:'GDEG Auto-Purchase Flow', icon:'⚡', status:'active', detail:'Workflow active · Triggers on GDEG orders'},
+  {name:'GDEG Token Monitor', icon:'🔍', status:'active', detail:'Checks Polygon for GDEG transfers'},
+  {name:'Paystack Webhook', icon:'💳', status:'active', detail:'Deployed · Needs dashboard URL config'},
+  {name:'Paddle Webhook', icon:'🚣', status:'pending', detail:'Deployed · Needs dashboard URL config'},
+  {name:'Gumroad Webhook', icon:'📚', status:'pending', detail:'Deployed · Needs dashboard URL config'},
+];
+
+document.getElementById('automations').innerHTML = automations.map(a => {
+  const badge = a.status === 'active' ? 'badge-green' : 'badge-yellow';
+  const dot = a.status === 'active' ? 'green' : 'yellow';
+  return `<div class="ch">
+    <div class="ch-icon" style="background:var(--card2);color:var(--p1)">${a.icon}</div>
+    <div class="ch-info">
+      <div class="ch-name">${a.name}</div>
+      <div class="ch-status">${a.detail}</div>
+    </div>
+    <div class="ch-badge ${badge}"><span class="status-dot ${dot}"></span>${a.status.toUpperCase()}</div>
+  </div>`;
+}).join('');
+
+document.getElementById('lastUpdate').textContent = new Date().toLocaleString('en-NG', {timeZone:'Africa/Lagos'});
+</script>
+
+<script>
+// Fetch live data from Cloudflare Pages Function
+async function loadDashboard() {
+  try {
+    const res = await fetch('/api/dashboard');
+    const data = await res.json();
+    if (data.status === 'ok') {
+      const rev = data.revenue || {};
+      document.getElementById('totalRevenueNGN').textContent = '₦' + (rev.total_ngn || 0).toLocaleString();
+      document.getElementById('totalRevenueUSD').textContent = '$' + (rev.total_usd || 0).toFixed(2) + ' USD';
+      const totalOrders = (rev.completed_count || 0) + (rev.failed_count || 0) + (rev.pending_count || 0);
+      document.getElementById('orderCount').textContent = totalOrders;
+      document.getElementById('orderBreakdown').textContent = (rev.completed_count || 0) + ' completed · ' + (rev.pending_count || 0) + ' pending';
+    }
+  } catch(e) {
+    console.log('Dashboard API not ready:', e.message);
+  }
+}
+loadDashboard();
+setInterval(loadDashboard, 30000);
+</script>
+</body>
+</html>
