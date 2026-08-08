@@ -1,0 +1,30 @@
+name: Daily Revenue Report
+on:
+  schedule:
+    # 9:00 PM Lagos time (UTC+1) = 20:00 UTC
+    - cron: '0 20 * * *'
+  workflow_dispatch:
+
+jobs:
+  revenue-report:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate Revenue Report
+        run: |
+          echo "Fetching revenue data from Harz Cloud..."
+          RESPONSE=$(curl -s -w "\n%{http_code}" "https://harz-cloud.pages.dev/api/revenue-report")
+          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+          BODY=$(echo "$RESPONSE" | head -n -1)
+          echo "HTTP Status: $HTTP_CODE"
+          echo "Response: $BODY"
+          
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "Failed to fetch revenue report"
+            exit 1
+          fi
+          
+          echo "$BODY" | jq '.'
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "Revenue report generation failed"
