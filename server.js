@@ -200,7 +200,7 @@ if (!process.env.HF_TOKEN) {
 }
 
 
-app.post('/ai/chat', async (req, res) => {
+app.post('/ai/chat', authenticate, async (req, res) => {
   try {
     const { message, system_prompt, model, history, max_tokens, temperature } = req.body;
     
@@ -217,91 +217,69 @@ app.post('/ai/chat', async (req, res) => {
     }
     messages.push({ role: 'user', content: message });
 
-    // Hugging Face models (primary)
-    const hfModels = [
-      model || 'meta-llama/Llama-3.1-8B-Instruct',
-      'meta-llama/Llama-3.1-8B-Instruct',
-      'Qwen/Qwen2.5-7B-Instruct'
-    ];
-    const tried = new Set();
-    
-    // Try Hugging Face first
+    // SECURITY 2026-10-10 + FIX: env-driven provider chain, honest failures, current model names
+    // Chain: OpenRouter Nemotron (if key set) -> Groq (if key set) -> HuggingFace (if token set)
+    const providers = [];
+
+    if (process.env.OPENROUTER_API_KEY) {
+      providers.push({
+        name: 'openrouter',
+        url: 'https://openrouter.ai/api/v1/chat/completions',
+        key: process.env.OPENROUTER_API_KEY,
+        models: [model || 'nvidia/nemotron-3-super-120b-a12b:free', 'nvidia/nemotron-3-ultra-550b-a55b:free']
+      });
+    }
+    if (process.env.GROQ_API_KEY) {
+      providers.push({
+        name: 'groq',
+        url: 'https://api.groq.com/openai/v1/chat/completions',
+        key: process.env.GROQ_API_KEY,
+        models: [model || 'qwen/qwen3.8-27b', 'openai/gpt-oss-120b', 'openai/gpt-oss-20b']
+      });
+    }
     if (process.env.HF_TOKEN) {
-      for (const m of hfModels) {
+      providers.push({
+        name: 'huggingface',
+        url: 'https://router.huggingface.co/v1/chat/completions',
+        key: process.env.HF_TOKEN,
+        models: [model || 'meta-llama/Llama-3.1-8B-Instruct', 'Qwen/Qwen2.5-7B-Instruct']
+      });
+    }
+
+    const failures = [];
+    for (const p of providers) {
+      const tried = new Set();
+      for (const m of p.models) {
         if (tried.has(m)) continue;
         tried.add(m);
-        
         try {
-          const hfResp = await fetch('https://router.huggingface.co/v1/chat/completions', {
+          const resp = await fetch(p.url, {
             method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${process.env.HF_TOKEN}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              model: m,
-              messages,
-              max_tokens: max_tokens || 500,
-              temperature: temperature || 0.7
-            })
+            headers: { 'Authorization': `Bearer ${p.key}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ model: m, messages, max_tokens: max_tokens || 500, temperature: temperature || 0.7 })
           });
-
-          if (hfResp.ok) {
-            const data = await hfResp.json();
+          if (resp.ok) {
+            const data = await resp.json();
             return res.json({
               success: true,
               response: data.choices?.[0]?.message?.content || 'No response generated.',
               model: data.model || m,
               tokens: data.usage?.total_tokens || 0,
-              provider: 'huggingface'
+              provider: p.name
             });
           }
+          failures.push(`${p.name}:${m}:${resp.status}`);
         } catch (e) {
-          console.log(`HF model ${m} error:`, e.message);
+          failures.push(`${p.name}:${m}:${e.message}`);
         }
-      }
-    }
-
-    // Fallback to Groq
-    const groqModels = ['qwen/qwen3.6-27b', 'llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
-    for (const m of groqModels) {
-      if (tried.has(m)) continue;
-      tried.add(m);
-      
-      try {
-        const groqResp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            model: m,
-            messages,
-            max_tokens: max_tokens || 500,
-            temperature: temperature || 0.7
-          })
-        });
-
-        if (groqResp.ok) {
-          const data = await groqResp.json();
-          return res.json({
-            success: true,
-            response: data.choices?.[0]?.message?.content || 'No response generated.',
-            model: data.model || m,
-            tokens: data.usage?.total_tokens || 0,
-            provider: 'groq'
-          });
-        }
-      } catch (e) {
-        console.log(`Groq model ${m} error:`, e.message);
       }
     }
 
     res.json({
       success: false,
       response: 'HARZ AI is currently unavailable. Please try again.',
-      error: 'All models failed'
+      error: 'All models failed',
+      detail: failures
     });
   } catch (error) {
     res.json({ success: false, response: 'Connection error.', error: error.message });
