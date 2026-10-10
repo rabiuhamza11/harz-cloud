@@ -6,7 +6,8 @@
 const http = require('http');
 
 const BASE_URL = 'http://localhost:3000';
-const API_KEY = 'harz_cloud_live_321424';
+const API_KEY = process.env.HARZ_API_KEY || ''; // SECURITY 2026-10-10: literal removed — set HARZ_API_KEY in your environment
+if (!API_KEY) { console.error('HARZ_API_KEY env var required — refusing to run with a published key'); process.exit(1); }
 
 let tests = 0;
 let passed = 0;

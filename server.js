@@ -48,8 +48,10 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const JWT_SECRET = process.env.JWT_SECRET || 'harz_cloud_321424_2026';
-const API_KEY = process.env.HARZ_API_KEY || 'harz_cloud_live_321424';
+// SECURITY 2026-10-10: published literal fallbacks removed (treated as compromised). Fail closed: a misconfigured service must not start with guessable secrets.
+const JWT_SECRET = process.env.JWT_SECRET;
+const API_KEY = process.env.HARZ_API_KEY;
+if (!JWT_SECRET || !API_KEY) { console.error('FATAL: JWT_SECRET and HARZ_API_KEY env vars are required — refusing to start with guessable defaults'); process.exit(1); }
 
 // Middleware
 app.use(cors({ origin: '*' }));
@@ -67,7 +69,7 @@ app.use((req, res, next) => {
 // API Key authentication (system-level)
 function authenticateAPI(req, res, next) {
   const key = req.headers['x-api-key'] || req.headers['authorization']?.replace('Bearer ', '');
-  if (key !== API_KEY && key !== JWT_SECRET) {
+  if (key !== API_KEY) { // SECURITY: the JWT signing secret must never double as an API key
     return res.status(401).json({ error: 'Unauthorized: Invalid API key' });
   }
   req.authType = 'api';
@@ -95,7 +97,7 @@ function authenticate(req, res, next) {
   const apiKey = req.headers['x-api-key'] || req.headers['authorization']?.replace('Bearer ', '');
   const token = req.headers['x-auth-token'];
   
-  if (apiKey && (apiKey === API_KEY || apiKey === JWT_SECRET)) {
+  if (apiKey && apiKey === API_KEY) { // SECURITY: the JWT signing secret must never double as an API key
     req.authType = 'api';
     req.user = { role: 'owner', email: 'system', id: 'system' };
     return next();

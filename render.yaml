@@ -20,7 +20,7 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: HARZ_API_KEY
-        value: harz_cloud_live_321424
+        sync: false # SECURITY 2026-10-10: key value removed from public repo — set privately in the Render dashboard
       - key: OWNER_EMAIL
         value: hamzarabiu390@gmail.com
       - key: OWNER_PHONE

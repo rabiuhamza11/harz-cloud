@@ -156,7 +156,7 @@
 
   <script>
     const API = 'https://harz-cloud-backend.onrender.com';
-    const API_KEY = 'harz_cloud_live_321424';
+    const API_KEY=localStorage.getItem('harz_api_key')||(function(){const k=prompt('API key required — obtain it privately from the owner.');if(k)localStorage.setItem('harz_api_key',k);return k||'';})(); /* SECURITY 2026-10-10: published key removed from public code */
 
     function switchTab(name) {
       document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', ['models','datasets','spaces','leaderboard','playground'][i] === name));

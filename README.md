@@ -19,7 +19,7 @@ Self-reliant backend for HARZ Digital Services. Replaces Base44/Cloudflare depen
 4. Set environment variables:
    - `PAYSTACK_SECRET_KEY` — your Paystack secret key
    - `JWT_SECRET` — auto-generated
-   - `HARZ_API_KEY` — `harz_cloud_live_321424`
+   - `HARZ_API_KEY` — obtain privately from the owner (never publish keys)
 5. Deploy!
 
 ## API Endpoints
@@ -54,7 +54,7 @@ Self-reliant backend for HARZ Digital Services. Replaces Base44/Cloudflare depen
 - `GET /status` — Ecosystem status
 
 ## Authentication
-All API requests require `x-api-key` header with value: `harz_cloud_live_321424`
+All API requests require `x-api-key` header. The key is issued privately by the owner — never publish it in code or docs.
 
 ## Local Development
 ```bash

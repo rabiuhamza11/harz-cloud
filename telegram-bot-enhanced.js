@@ -4,7 +4,7 @@
  */
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
-const HARZ_API_KEY = process.env.HARZ_API_KEY || 'harz_cloud_live_321424';
+const HARZ_API_KEY = process.env.HARZ_API_KEY || ''; // SECURITY 2026-10-10: literal removed — set HARZ_API_KEY in your environment
 const HARZ_BASE = process.env.HARZ_CLOUD_BASE || 'https://harz-cloud-backend.onrender.com';
 
 // Bot commands

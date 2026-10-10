@@ -11,7 +11,7 @@ const https = require('https');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-const API_KEY = process.env.HARZ_API_KEY || 'harz_cloud_live_321424';
+const API_KEY = process.env.HARZ_API_KEY || ''; // SECURITY 2026-10-10: literal removed — set HARZ_API_KEY in your environment
 
 app.use(cors({ origin: '*' }));
 app.use(express.json({ limit: '50mb' }));
