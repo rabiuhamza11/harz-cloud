@@ -14,7 +14,8 @@
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'harz_cloud_321424_2026';
+// SECURITY: env var only, no hardcoded fallback
+const JWT_SECRET = process.env.JWT_SECRET || (() => { throw new Error('JWT_SECRET env var required'); })();
 const SSO_ISSUER = 'harz-cloud';
 const TOKEN_EXPIRY = '30d';
 const REFRESH_EXPIRY_DAYS = 90;
